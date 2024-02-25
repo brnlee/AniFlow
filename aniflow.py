@@ -31,7 +31,7 @@ class Episode:
         details = anitopy.parse(self.get_name(), options=anitopy_options)
         # print(details)
         self.anime_title = details.get('anime_title')
-        self.episode_number = int(details.get('episode_number').lstrip('0'))
+        self.episode_number = float(details.get('episode_number').lstrip('0'))
         self.season = details.get('anime_season')
 
     def get_name(self):
@@ -57,7 +57,7 @@ class Episode:
                 pass
 
         if self.episode_number:
-            return f'{self.anime_title}{season}- Episode {self.episode_number}'
+            return f'{self.anime_title}{season}- Episode {self.episode_number:g}'
         else:
             return self.anime_title
 
