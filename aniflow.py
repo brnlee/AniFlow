@@ -122,7 +122,7 @@ class AniFlow:
             return
         else:
             self.episode_choice = episode_choice  
-            # os.startfile(self.episode_choice.path)
+            os.startfile(self.episode_choice.path)
 
     def maybe_open_reddit_discussion(self):
         inquirer_open_reddit_discussion = 'reddit'
