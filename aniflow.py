@@ -213,7 +213,6 @@ class AniFlow:
                 #     self.update_anilist()
                 elif not self.delete_torrent_asked:
                     self.maybe_delete_file()
-                    break
                 else:
                     self.reset()
         except KeyboardInterrupt:
