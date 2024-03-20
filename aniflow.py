@@ -122,7 +122,7 @@ class AniFlow:
             return
         else:
             self.episode_choice = episode_choice  
-            os.startfile(self.episode_choice.path)
+            # os.startfile(self.episode_choice.path)
 
     def maybe_open_reddit_discussion(self):
         inquirer_open_reddit_discussion = 'reddit'
@@ -193,13 +193,13 @@ class AniFlow:
                 'hashes': self.episode_choice.torrent_hash,
                 'deleteFiles': 'true',
             }
-            requests.get(QBITTORRENT_API + TORRENTS_DELETE, params)
+            requests.post(QBITTORRENT_API + TORRENTS_DELETE, params)
         else:
             os.remove(self.episode_choice.path)
             params = {  
                 'hashes': self.episode_choice.torrent_hash,
             }
-            requests.get(QBITTORRENT_API + TORRENTS_RECHECK, params)
+            requests.post(QBITTORRENT_API + TORRENTS_RECHECK, params)
 
     def start(self):
         try:
@@ -213,6 +213,7 @@ class AniFlow:
                 #     self.update_anilist()
                 elif not self.delete_torrent_asked:
                     self.maybe_delete_file()
+                    break
                 else:
                     self.reset()
         except KeyboardInterrupt:
