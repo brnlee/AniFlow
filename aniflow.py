@@ -90,12 +90,12 @@ class AniFlow:
         for index, file in enumerate(files):
             if file.get('progress') == PROGRESS_COMPLETE:
                 name = file.get('name')
-                path = str(Path(f'{torrent_path}{name}'))
-                if not os.path.exists(path):
+                path = Path(torrent_path) / name
+                if not path.exists():
                     continue
                 episodes[name] = Episode(
                     name,
-                    path,
+                    str(path),
                     torrent_hash,
                     index == len(files) - 1 # can_delete_torrent
                 )
