@@ -1,16 +1,13 @@
+from typing import Dict
 import requests
 import os
 import inquirer
 import anitopy
 import urllib
 import webbrowser
+import qbittorrentapi
 from pathlib import Path
 
-QBITTORRENT_API = 'http://localhost:8080/api/v2'
-TORRENTS_INFO = '/torrents/info'
-TORRENTS_FILES = '/torrents/files'
-TORRENTS_DELETE = '/torrents/delete'
-TORRENTS_RECHECK = '/torrents/recheck'
 PROGRESS_COMPLETE = 1
 
 REDDIT = 'https://old.reddit.com/search?'
@@ -18,7 +15,8 @@ REDDIT = 'https://old.reddit.com/search?'
 RELOAD = '[Reload Episodes]'
 
 class Episode:
-    def __init__(self, name, path, torrent_hash, can_delete_torrent):
+    def __init__(self, index, name, path, torrent_hash, can_delete_torrent):
+        self.index = index
         self.name = name
         self.path = path
         self.torrent_hash = torrent_hash
@@ -68,42 +66,39 @@ class AniFlow:
     open_reddit_discussion_asked = False
     update_anilist_asked = False
     delete_torrent_asked = False
+    qbittorrent = None
+    torrents = {}
 
     def get_torrents_info(self):
         params = {
             'category': 'Anime',
             'sort': 'name',
         }
-        request = requests.get(QBITTORRENT_API + TORRENTS_INFO, params)
-        torrents_info = request.json()
-        return torrents_info
+        return self.qbittorrent.torrents_info(category = 'Anime', sort = 'name')
 
     def get_episodes(self, torrent):
-        torrent_hash = torrent.get('hash')
-        params = {
-            'hash': torrent_hash
-        }
-        torrent_path = torrent.get('save_path')
-        request = requests.get(QBITTORRENT_API + TORRENTS_FILES, params)
-        files = request.json()
-        episodes = {}
-        for index, file in enumerate(files):
+        episodes = set()
+        for index, file in enumerate(torrent.files):
             if file.get('progress') == PROGRESS_COMPLETE:
-                name = file.get('name')
-                path = Path(torrent_path) / name
+                path = Path(torrent.save_path) / file.name
                 if not path.exists():
                     continue
-                episodes[name] = Episode(
-                    name,
+                episode = Episode(
+                    file.index,
+                    file.name,
                     str(path),
-                    torrent_hash,
-                    index == len(files) - 1 # can_delete_torrent
+                    torrent.hash,
+                    index == len(torrent.files) - 1 # can_delete_torrent
                 )
+                episodes.add(episode)
+                self.torrents[episode] = torrent
+
+
         return episodes
 
     def select_episode(self):
         inquirer_episode_choice = 'episode choice'
-        episodes = {}
+        episodes = set()
         torrents = self.get_torrents_info()
         for torrent in torrents:
             episodes |= self.get_episodes(torrent)
@@ -112,7 +107,7 @@ class AniFlow:
             inquirer.List(
                 inquirer_episode_choice,
                 message="What do you want to watch?",
-                choices=sorted([episode for episode in episodes.values()], key=lambda ep: (ep.anime_title, ep.season, ep.episode_number)) + [RELOAD],
+                choices=sorted([episode for episode in episodes], key=lambda ep: (ep.anime_title, ep.season, ep.episode_number)) + [RELOAD],
                 carousel=True
             )
         ]
@@ -121,7 +116,7 @@ class AniFlow:
         if episode_choice == RELOAD:
             return
         else:
-            self.episode_choice = episode_choice  
+            self.episode_choice = episode_choice
             os.startfile(self.episode_choice.path)
 
     def maybe_open_reddit_discussion(self):
@@ -193,16 +188,22 @@ class AniFlow:
                 'hashes': self.episode_choice.torrent_hash,
                 'deleteFiles': 'true',
             }
-            requests.post(QBITTORRENT_API + TORRENTS_DELETE, params)
+            self.torrents[self.episode_choice].delete(delete_files=True)
         else:
+            self.torrents[self.episode_choice].file_priority(file_ids=self.episode_choice.index, priority=0)
             os.remove(self.episode_choice.path)
-            params = {  
-                'hashes': self.episode_choice.torrent_hash,
-            }
-            requests.post(QBITTORRENT_API + TORRENTS_RECHECK, params)
+            self.torrents[self.episode_choice].recheck()
+
+    def init(self):
+        conn_info = dict(
+            host="localhost",
+            port=8080,
+        )
+        self.qbittorrent = qbittorrentapi.Client(**conn_info)
 
     def start(self):
         try:
+            self.init()
             while True:
                 if self.episode_choice is None:
                     self.reset()
