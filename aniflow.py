@@ -70,16 +70,13 @@ class AniFlow:
     torrents = {}
 
     def get_torrents_info(self):
-        params = {
-            'category': 'Anime',
-            'sort': 'name',
-        }
+
         return self.qbittorrent.torrents_info(category = 'Anime', sort = 'name')
 
     def get_episodes(self, torrent):
         episodes = set()
         for index, file in enumerate(torrent.files):
-            if file.get('progress') == PROGRESS_COMPLETE:
+            if file.get('progress') == PROGRESS_COMPLETE and file.priority == 1:
                 path = Path(torrent.save_path) / file.name
                 if not path.exists():
                     continue
@@ -192,7 +189,6 @@ class AniFlow:
         else:
             self.torrents[self.episode_choice].file_priority(file_ids=self.episode_choice.index, priority=0)
             os.remove(self.episode_choice.path)
-            self.torrents[self.episode_choice].recheck()
 
     def init(self):
         conn_info = dict(
@@ -218,11 +214,6 @@ class AniFlow:
                     self.reset()
         except KeyboardInterrupt:
             exit()
-        finally:
-            # In case I close the program before remembering to delete a watched episode first.
-            print()
-            if self.open_reddit_discussion_asked:
-                self.delete_torrent()
 
     def reset(self):
         self.episode_choice = None
