@@ -1,12 +1,13 @@
+import json
 import os
-import inquirer
-import anitopy
 import urllib
 import webbrowser
-import qbittorrentapi
-import json
 from functools import reduce
 from pathlib import Path
+
+import anitopy
+import inquirer
+import qbittorrentapi
 
 PROGRESS_COMPLETE = 1
 
@@ -27,7 +28,6 @@ class Episode:
 
         anitopy_options = {"parse_file_extension": False, "parse_release_group": False}
         details = anitopy.parse(self.get_name(), options=anitopy_options)
-        # print(details)
         self.anime_title = details.get("anime_title")
         episode_number = details.get("episode_number")
         self.episode_number = (
@@ -63,14 +63,13 @@ class Episode:
 
 
 class AniFlow:
+    qbittorrent = None
+    torrents = {}
     episode_choice: Episode = None
     open_reddit_discussion_asked = False
     delete_torrent_asked = False
-    qbittorrent = None
-    torrents = {}
 
     def get_torrents_info(self):
-
         return self.qbittorrent.torrents_info(category="Anime", sort="name")
 
     def get_episodes(self, torrent):
@@ -177,10 +176,6 @@ class AniFlow:
 
     def delete_torrent(self):
         if self.episode_choice.can_delete_torrent:
-            params = {
-                "hashes": self.episode_choice.torrent_hash,
-                "deleteFiles": "true",
-            }
             self.torrents[self.episode_choice].delete(delete_files=True)
         else:
             self.torrents[self.episode_choice].file_priority(
