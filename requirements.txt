@@ -1,3 +1,5 @@
 qbittorrentapi
 anitopy
 inquirer
+requests
+praw
