@@ -21,13 +21,14 @@ class Reddit:
         self.anime_subreddit = reddit.subreddit("anime")
 
     def get_discussion_url(self, episode: Episode) -> str:
-        titles = get_titles(episode.fmt_str(include_episode_number=False))
-        for title in titles:
-            query = Reddit._create_reddit_search_query(title, episode.episode_number)
-            submissions = self.anime_subreddit.search(query, sort="new")
-            submission = next(submissions, None)
-            if submission and not next(submissions, None):
-                return submission.url
+        query = Reddit._create_reddit_search_query(episode)
+        submissions = self.anime_subreddit.search(query)
+
+        submission = next(submissions, None)
+        # Only return a URL here if there is only a single matching submission
+        if submission and not next(submissions, None):
+            return submission.url
+
         return Reddit._get_blind_search_url(episode)
 
     @staticmethod
@@ -65,8 +66,9 @@ class Reddit:
         return response.json().get("access_token")
 
     @staticmethod
-    def _create_reddit_search_query(title: str, episode_number: int):
-        search_args = [f'"{title}"']
-        if episode_number:
-            search_args.append(f'"Episode {episode_number:g}"')
-        return " ".join(["flair:episode", " AND ".join(search_args)])
+    def _create_reddit_search_query(episode: Episode):
+        title_terms = " OR ".join([f'"{title}"' for title in get_titles(episode)])
+        query = f"flair:episode ({title_terms})"
+        if episode.episode_number:
+            query += f' AND "Episode {episode.episode_number}"'
+        return query

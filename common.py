@@ -17,6 +17,8 @@ class Episode:
         self.episode_number = (
             float(episode_number.lstrip("0")) if episode_number else None
         )
+        if self.episode_number:
+            self.episode_number = f"{self.episode_number:g}"
         self.season = details.get("anime_season")
 
     def _get_file_name(self):
@@ -41,7 +43,7 @@ class Episode:
                 pass
 
         if include_episode_number and self.episode_number:
-            tokens.append(f"Episode {self.episode_number:g}")
+            tokens.append(f"Episode {self.episode_number}")
 
         return tokens
 
