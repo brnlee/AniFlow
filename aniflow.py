@@ -74,9 +74,6 @@ class AniFlow:
 
     def maybe_open_reddit_discussion(self):
         reddit_url = self.reddit.get_discussion_url(self.episode_choice)
-        if not reddit_url:
-            self.open_reddit_discussion_asked = True
-            return
 
         inquirer_open_reddit_discussion = "reddit"
         should_open_reddit_discussion = inquirer.prompt(

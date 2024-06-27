@@ -1,3 +1,5 @@
+import urllib
+
 import praw
 import requests
 
@@ -18,7 +20,7 @@ class Reddit:
         )
         self.anime_subreddit = reddit.subreddit("anime")
 
-    def get_discussion_url(self, episode: Episode) -> str | None:
+    def get_discussion_url(self, episode: Episode) -> str:
         titles = get_titles(episode.fmt_str(include_episode_number=False))
         for title in titles:
             query = Reddit._create_reddit_search_query(title, episode.episode_number)
@@ -26,6 +28,22 @@ class Reddit:
             submission = next(submissions, None)
             if submission and not next(submissions, None):
                 return submission.url
+        return Reddit._get_blind_search_url(episode)
+
+    @staticmethod
+    def _get_blind_search_url(episode: Episode):
+        query = [
+            "flair:episode",
+            episode.anime_title,
+        ]
+        params = {
+            "q": " ".join(query),
+            "sort": "new",
+            "t": "all",
+            "restrict_sr": "on",
+        }
+        encoded_params = urllib.parse.urlencode(params)
+        return f"https://www.reddit.com/r/anime/search?{encoded_params}"
 
     @staticmethod
     def _get_reddit_token():
