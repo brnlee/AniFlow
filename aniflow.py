@@ -1,69 +1,21 @@
-import json
 import os
-import urllib
 import webbrowser
-from functools import reduce
 from pathlib import Path
 
-import anitopy
 import inquirer
 import qbittorrentapi
 
+from common import Episode
+from reddit import Reddit
+
 PROGRESS_COMPLETE = 1
-
-REDDIT_SEARCH = "https://www.reddit.com/search?"
-
-REDDIT_SEARCH_JSON = "https://www.reddit.com/search.json?"
 
 RELOAD = "[Reload Episodes]"
 
 
-class Episode:
-    def __init__(self, index, name, path, torrent_hash, can_delete_torrent):
-        self.index = index
-        self.name = name
-        self.path = path
-        self.torrent_hash = torrent_hash
-        self.can_delete_torrent = can_delete_torrent
-
-        anitopy_options = {"parse_file_extension": False, "parse_release_group": False}
-        details = anitopy.parse(self.get_name(), options=anitopy_options)
-        self.anime_title = details.get("anime_title")
-        episode_number = details.get("episode_number")
-        self.episode_number = (
-            float(episode_number.lstrip("0")) if episode_number else None
-        )
-        self.season = details.get("anime_season")
-
-    def get_name(self):
-        return self.name.split("/")[-1]
-
-    def get_reddit_searchable_query(self):
-        # ["Kaguya-sama wa Kokurasetai", "First Kiss wa Owaranai", "Episode 1"]
-        tokens = self.__str__().split(" - ")
-        #  "Kaguya-sama wa Kokurasetai" AND "First Kiss wa Owaranai" AND "Episode 1"
-        query_with_season = " AND ".join([f'"{token}"' for token in tokens])
-        # if len(tokens) == 3 and self.episode_number:
-        #     query_without_season = f'"{self.anime_title}" AND "Episode {self.episode_number}"'
-        #     return f'({query_with_season} OR {query_without_season})'
-        return query_with_season
-
-    def __str__(self):
-        season = " "
-        if self.season:
-            try:
-                season = f" - Season {int(self.season)} "
-            except ValueError:
-                pass
-
-        if self.episode_number:
-            return f"{self.anime_title}{season}- Episode {self.episode_number:g}"
-        else:
-            return self.anime_title
-
-
 class AniFlow:
     qbittorrent = None
+    reddit = None
     torrents = {}
     episode_choice: Episode = None
     open_reddit_discussion_asked = False
@@ -118,10 +70,13 @@ class AniFlow:
             return
         else:
             self.episode_choice = episode_choice
-            os.startfile(self.episode_choice.path)
+            # os.startfile(self.episode_choice.path)
 
     def maybe_open_reddit_discussion(self):
-        reddit_url = self.get_reddit_discussion_thread_or_search_query()
+        reddit_url = self.reddit.get_discussion_url(self.episode_choice)
+        if not reddit_url:
+            self.open_reddit_discussion_asked = True
+            return
 
         inquirer_open_reddit_discussion = "reddit"
         should_open_reddit_discussion = inquirer.prompt(
@@ -139,30 +94,6 @@ class AniFlow:
             webbrowser.open_new(reddit_url)
 
         self.open_reddit_discussion_asked = True
-
-    def get_reddit_discussion_thread_or_search_query(self):
-        query = [
-            "subreddit:anime",
-            "flair:episode",
-            self.episode_choice.get_reddit_searchable_query(),
-        ]
-        params = {
-            "q": " ".join(query),
-            "restrict_sr": "",
-            "sort": "new",
-            "t": "all",
-        }
-        encoded_params = urllib.parse.urlencode(params)
-
-        reddit_search = REDDIT_SEARCH_JSON + encoded_params
-        with urllib.request.urlopen(reddit_search) as response:
-            data = json.load(response)
-            posts = nested_get(data, ["data", "children"])
-            if posts and len(posts) == 1:
-                return nested_get(posts[0], ["data", "url"])
-
-        # Could not confidently find the discussion thread. Open search page instead.
-        return REDDIT_SEARCH + encoded_params
 
     def maybe_delete_file(self):
         inquirer_delete_torrent = "delete"
@@ -190,6 +121,8 @@ class AniFlow:
         )
         self.qbittorrent = qbittorrentapi.Client(**conn_info)
 
+        self.reddit = Reddit()
+
     def start(self):
         try:
             self.init()
@@ -199,8 +132,8 @@ class AniFlow:
                     self.select_episode()
                 elif not self.open_reddit_discussion_asked:
                     self.maybe_open_reddit_discussion()
-                elif not self.delete_torrent_asked:
-                    self.maybe_delete_file()
+                # elif not self.delete_torrent_asked:
+                #     self.maybe_delete_file()
                 else:
                     self.reset()
         except KeyboardInterrupt:
@@ -211,14 +144,6 @@ class AniFlow:
         self.open_reddit_discussion_asked = False
         self.delete_torrent_asked = False
         os.system("cls")
-
-
-def nested_get(dic, keys):
-    for key in keys:
-        if not isinstance(dic, dict):
-            return None
-        dic = dic.get(key)
-    return dic
 
 
 AniFlow().start()
