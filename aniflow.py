@@ -70,7 +70,7 @@ class AniFlow:
             return
         else:
             self.episode_choice = episode_choice
-            # os.startfile(self.episode_choice.path)
+            os.startfile(self.episode_choice.path)
 
     def maybe_open_reddit_discussion(self):
         reddit_url = self.reddit.get_discussion_url(self.episode_choice)
@@ -132,8 +132,8 @@ class AniFlow:
                     self.select_episode()
                 elif not self.open_reddit_discussion_asked:
                     self.maybe_open_reddit_discussion()
-                # elif not self.delete_torrent_asked:
-                #     self.maybe_delete_file()
+                elif not self.delete_torrent_asked:
+                    self.maybe_delete_file()
                 else:
                     self.reset()
         except KeyboardInterrupt:
