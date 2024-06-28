@@ -56,7 +56,7 @@ class AniListData:
 
     titles = None
     episode_count = None
-    site_url = None
+    entry_url = None
 
 
 def nested_get(dic, keys):

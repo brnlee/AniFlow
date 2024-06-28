@@ -1,6 +1,6 @@
 import requests
 
-from common import Episode, nested_get, AniListData
+from common import AniListData, Episode, nested_get
 
 URL = "https://graphql.anilist.co"
 
@@ -65,11 +65,11 @@ def find_and_set_data(episode: Episode):
     results = nested_get(response.json(), ["data", "anime", "results"])
 
     anime = match_title(episode, results)
-    if not match_title:
+    if not anime:
         return
 
     anilist_data = AniListData()
     anilist_data.titles = anime.get("titles")
     anilist_data.episode_count = anime.get("episodes")
-    anilist_data.site_url = anime.get("siteUrl")
+    anilist_data.entry_url = anime.get("siteUrl")
     episode.anilist_data = anilist_data

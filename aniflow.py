@@ -5,9 +5,9 @@ from pathlib import Path
 import inquirer
 import qbittorrentapi
 
+from anilist import find_and_set_data
 from common import Episode
 from reddit import Reddit
-from anilist import find_and_set_data
 
 PROGRESS_COMPLETE = 1
 
@@ -20,6 +20,7 @@ class AniFlow:
     torrents = {}
     episode_choice: Episode = None
     open_reddit_discussion_asked = False
+    open_anilist_asked = False
     delete_torrent_asked = False
 
     def get_torrents_info(self):
@@ -98,6 +99,31 @@ class AniFlow:
 
         self.open_reddit_discussion_asked = True
 
+    def maybe_open_anilist(self):
+        self.open_anilist_asked = True
+
+        episode_number = self.episode_choice.episode_number
+        anilist_data = self.episode_choice.anilist_data
+        if not anilist_data or (
+            episode_number and int(episode_number) != int(anilist_data.episode_count)
+        ):
+            return
+
+        inquirer_open_anilist = "anilist"
+        should_open_anilist = inquirer.prompt(
+            [
+                inquirer.Confirm(
+                    inquirer_open_anilist,
+                    message="Open AniList entry?",
+                    default=True,
+                )
+            ],
+            raise_keyboard_interrupt=True,
+        ).get(inquirer_open_anilist)
+
+        if should_open_anilist:
+            webbrowser.open_new(anilist_data.entry_url)
+
     def maybe_delete_file(self):
         inquirer_delete_torrent = "delete"
         should_delete_torrent = inquirer.prompt(
@@ -135,6 +161,8 @@ class AniFlow:
                     self.select_episode()
                 elif not self.open_reddit_discussion_asked:
                     self.maybe_open_reddit_discussion()
+                elif not self.open_anilist_asked:
+                    self.maybe_open_anilist()
                 elif not self.delete_torrent_asked:
                     self.maybe_delete_file()
                 else:
@@ -145,6 +173,7 @@ class AniFlow:
     def reset(self):
         self.episode_choice = None
         self.open_reddit_discussion_asked = False
+        self.open_anilist_asked = False
         self.delete_torrent_asked = False
         os.system("cls")
 
