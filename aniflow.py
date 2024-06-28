@@ -7,6 +7,7 @@ import qbittorrentapi
 
 from common import Episode
 from reddit import Reddit
+from anilist import find_and_set_data
 
 PROGRESS_COMPLETE = 1
 
@@ -56,7 +57,11 @@ class AniFlow:
                 message="What do you want to watch?",
                 choices=sorted(
                     [episode for episode in episodes],
-                    key=lambda ep: (ep.anime_title, ep.season, ep.episode_number),
+                    key=lambda ep: (
+                        ep.anime_title,
+                        ep.season,
+                        float(ep.episode_number) if ep.episode_number else None,
+                    ),
                 )
                 + [RELOAD],
                 carousel=True,
@@ -71,6 +76,7 @@ class AniFlow:
         else:
             self.episode_choice = episode_choice
             os.startfile(self.episode_choice.path)
+            find_and_set_data(self.episode_choice)
 
     def maybe_open_reddit_discussion(self):
         reddit_url = self.reddit.get_discussion_url(self.episode_choice)

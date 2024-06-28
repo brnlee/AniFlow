@@ -20,6 +20,7 @@ class Episode:
         if self.episode_number:
             self.episode_number = f"{self.episode_number:g}"
         self.season = details.get("anime_season")
+        self.anilist_data = None
 
     def _get_file_name(self):
         """Returns the file name after removing any directory paths"""
@@ -49,6 +50,13 @@ class Episode:
 
     def fmt_str(self, delimiter=" - ", **kwargs):
         return delimiter.join(self.fmt_str_tokens(**kwargs))
+
+
+class AniListData:
+
+    titles = None
+    episode_count = None
+    site_url = None
 
 
 def nested_get(dic, keys):

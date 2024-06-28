@@ -4,7 +4,6 @@ import praw
 import requests
 
 import credentials
-from anilist import get_titles
 from common import Episode
 
 
@@ -22,13 +21,12 @@ class Reddit:
 
     def get_discussion_url(self, episode: Episode) -> str:
         query = Reddit._create_reddit_search_query(episode)
-        submissions = self.anime_subreddit.search(query)
-
-        submission = next(submissions, None)
-        # Only return a URL here if there is only a single matching submission
-        if submission and not next(submissions, None):
-            return submission.url
-
+        if query:
+            submissions = self.anime_subreddit.search(query)
+            submission = next(submissions, None)
+            # Only return a URL here if there is only a single matching submission
+            if submission and not next(submissions, None):
+                return submission.url
         return Reddit._get_blind_search_url(episode)
 
     @staticmethod
@@ -67,7 +65,11 @@ class Reddit:
 
     @staticmethod
     def _create_reddit_search_query(episode: Episode):
-        title_terms = " OR ".join([f'"{title}"' for title in get_titles(episode)])
+        if not episode.anilist_data:
+            return None
+        title_terms = " OR ".join(
+            [f'"{title}"' for title in episode.anilist_data.titles]
+        )
         query = f"flair:episode ({title_terms})"
         if episode.episode_number:
             query += f' AND "Episode {episode.episode_number}"'

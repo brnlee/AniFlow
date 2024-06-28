@@ -1,6 +1,6 @@
 import requests
 
-from common import Episode, nested_get
+from common import Episode, nested_get, AniListData
 
 URL = "https://graphql.anilist.co"
 
@@ -30,8 +30,16 @@ def do_titles_match(episode: Episode, title_to_compare: str):
     )
 
 
-def get_titles(episode: Episode):
-    search_title = episode.fmt_str(delimiter=" ", include_episode_number=False)
+def match_title(episode, results):
+    for anime in results:
+        anime["titles"] = list(anime.get("title").values()) + sorted(
+            anime.get("synonyms")
+        )
+        if any(map(lambda title: do_titles_match(episode, title), anime["titles"])):
+            return anime
+
+
+def find_and_set_data(episode: Episode):
     query = """
     query ($search: String) {
     anime: Page(perPage: 10) {
@@ -41,20 +49,27 @@ def get_titles(episode: Episode):
             romaji
         }
         synonyms
+        episodes
+        siteUrl
         }
     }
     }
     """
+    search_title = episode.fmt_str(delimiter=" ", include_episode_number=False)
     variables = {"search": search_title}
 
     response = requests.post(URL, json={"query": query, "variables": variables})
     if response.status_code != 200:
-        return None
+        return
 
     results = nested_get(response.json(), ["data", "anime", "results"])
-    for media in results:
-        titles = list(media.get("title").values()) + sorted(media.get("synonyms"))
-        if any(map(lambda title: do_titles_match(episode, title), titles)):
-            return titles
 
-    return [search_title]
+    anime = match_title(episode, results)
+    if not match_title:
+        return
+
+    anilist_data = AniListData()
+    anilist_data.titles = anime.get("titles")
+    anilist_data.episode_count = anime.get("episodes")
+    anilist_data.site_url = anime.get("siteUrl")
+    episode.anilist_data = anilist_data
