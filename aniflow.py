@@ -56,7 +56,11 @@ class AniFlow:
                 message="What do you want to watch?",
                 choices=sorted(
                     [episode for episode in episodes],
-                    key=lambda ep: (ep.anime_title, ep.season, ep.episode_number),
+                    key=lambda ep: (
+                        ep.anime_title,
+                        ep.season,
+                        float(ep.episode_number) if ep.episode_number else None,
+                    ),
                 )
                 + [RELOAD],
                 carousel=True,
