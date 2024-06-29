@@ -10,6 +10,11 @@ An all-in-one command-line program to streamline your anime experience from star
 * Remove the episode from your system & qBittorrent
 
 ## Setup
+### Dependencies
+```console
+pip install -r requirements.txt
+```
+
 ### Secrets
 Various secrets are required:
 * Reddit: Create an application on [Reddit](https://reddit.com/prefs/apps/)
