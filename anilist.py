@@ -32,9 +32,9 @@ def do_titles_match(episode: Episode, title_to_compare: str):
 
 def match_title(episode, results):
     for anime in results:
-        anime["titles"] = list(anime.get("title").values()) + sorted(
-            anime.get("synonyms")
-        )
+        anime["titles"] = [title for title in anime.get("title").values() if title]
+        if anime.get("synonyms"):
+            anime["titles"].extend(sorted(anime.get("synonyms")))
         if any(map(lambda title: do_titles_match(episode, title), anime["titles"])):
             return anime
 
