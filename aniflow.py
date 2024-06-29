@@ -4,11 +4,11 @@ from pathlib import Path
 
 import inquirer
 import qbittorrentapi
+from dotenv import load_dotenv
 
-from anilist import find_and_set_data
+from anilist import AniList
 from common import Episode
 from reddit import Reddit
-from dotenv import load_dotenv
 
 PROGRESS_COMPLETE = 1
 
@@ -18,9 +18,12 @@ RELOAD = "[Reload Episodes]"
 class AniFlow:
     qbittorrent = None
     reddit = None
+    anilist = None
     torrents = {}
     episode_choice: Episode = None
     open_reddit_discussion_asked = False
+    auth_anilist_asked = False
+    update_anilist_progress_asked = False
     open_anilist_asked = False
     delete_torrent_asked = False
 
@@ -77,8 +80,8 @@ class AniFlow:
             return
         else:
             self.episode_choice = episode_choice
-            # os.startfile(self.episode_choice.path)
-            find_and_set_data(self.episode_choice)
+            os.startfile(self.episode_choice.path)
+            self.anilist.find_and_set_data(self.episode_choice)
 
     def maybe_open_reddit_discussion(self):
         reddit_url = self.reddit.get_discussion_url(self.episode_choice)
@@ -100,14 +103,52 @@ class AniFlow:
 
         self.open_reddit_discussion_asked = True
 
+    def maybe_auth_anilist(self):
+        if not self.anilist.should_auth():
+            self.auth_anilist_asked = True
+            return
+
+        self.anilist.get_access_token()
+
+        inquirer_anilist_auth = "anilist_auth"
+        access_token = inquirer.prompt(
+            [
+                inquirer.Text(
+                    inquirer_anilist_auth,
+                    message="Enter the Auth Pin from AniList",
+                )
+            ],
+            raise_keyboard_interrupt=True,
+        ).get(inquirer_anilist_auth)
+        self.anilist.set_access_token(access_token)
+
+        self.auth_anilist_asked = True
+
+    def maybe_update_anilist_progress(self):
+        inquirer_update_anilist_progress = "update_anilist_progress"
+        update_anilist_progress = inquirer.prompt(
+            [
+                inquirer.Confirm(
+                    inquirer_update_anilist_progress,
+                    message="Update progress on AniList?",
+                    default=True,
+                )
+            ],
+            raise_keyboard_interrupt=True,
+        ).get(inquirer_update_anilist_progress)
+
+        if update_anilist_progress:
+            encountered_auth_error = self.anilist.update_progress(self.episode_choice)
+            if encountered_auth_error:
+                self.auth_anilist_asked = False
+                return
+
+        self.update_anilist_progress_asked = True
+
     def maybe_open_anilist(self):
         self.open_anilist_asked = True
 
-        episode_number = self.episode_choice.episode_number
-        anilist_data = self.episode_choice.anilist_data
-        if not anilist_data or (
-            episode_number and int(episode_number) != int(anilist_data.episode_count)
-        ):
+        if not self.episode_choice.is_last_episode():
             return
 
         inquirer_open_anilist = "anilist"
@@ -123,7 +164,7 @@ class AniFlow:
         ).get(inquirer_open_anilist)
 
         if should_open_anilist:
-            webbrowser.open_new(anilist_data.entry_url)
+            webbrowser.open_new(self.episode_choice.anilist_data.entry_url)
 
     def maybe_delete_file(self):
         inquirer_delete_torrent = "delete"
@@ -153,6 +194,7 @@ class AniFlow:
         self.qbittorrent = qbittorrentapi.Client(**conn_info)
 
         self.reddit = Reddit()
+        self.anilist = AniList()
 
     def start(self):
         try:
@@ -163,10 +205,14 @@ class AniFlow:
                     self.select_episode()
                 elif not self.open_reddit_discussion_asked:
                     self.maybe_open_reddit_discussion()
-                # elif not self.open_anilist_asked:
-                #     self.maybe_open_anilist()
-                # elif not self.delete_torrent_asked:
-                #     self.maybe_delete_file()
+                elif not self.auth_anilist_asked:
+                    self.maybe_auth_anilist()
+                elif not self.update_anilist_progress_asked:
+                    self.maybe_update_anilist_progress()
+                elif not self.open_anilist_asked:
+                    self.maybe_open_anilist()
+                elif not self.delete_torrent_asked:
+                    self.maybe_delete_file()
                 else:
                     self.reset()
         except KeyboardInterrupt:
@@ -175,9 +221,11 @@ class AniFlow:
     def reset(self):
         self.episode_choice = None
         self.open_reddit_discussion_asked = False
+        self.auth_anilist_asked = False
+        self.update_anilist_progress_asked = False
         self.open_anilist_asked = False
         self.delete_torrent_asked = False
-        # os.system("cls")
+        os.system("cls")
 
 
 AniFlow().start()

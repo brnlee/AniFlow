@@ -20,7 +20,15 @@ class Episode:
         if self.episode_number:
             self.episode_number = f"{self.episode_number:g}"
         self.season = details.get("anime_season")
-        self.anilist_data = None
+        self.anilist_data: AniListData = None
+
+    def is_last_episode(self):
+        if not self.anilist_data:
+            return False
+        elif not self.episode_number:
+            return True
+
+        return int(self.episode_number) is int(self.anilist_data.episode_count)
 
     def _get_file_name(self):
         """Returns the file name after removing any directory paths"""
