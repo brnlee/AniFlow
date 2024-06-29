@@ -1,36 +1,40 @@
 import urllib
+from os import getenv
 
 import praw
 import requests
 
-import credentials
 from common import Episode
 
 
 class Reddit:
 
     def __init__(self) -> None:
-        self.reddit_token = Reddit._get_reddit_token()
+        self.USERNAME = getenv("REDDIT_USERNAME")
+        self.PASSWORD = getenv("REDDIT_PASSWORD")
+        self.USER_AGENT = getenv("REDDIT_USER_AGENT")
+        self.APP_CLIENT_ID = getenv("REDDIT_APP_CLIENT_ID")
+        self.APP_CLIENT_SECRET = getenv("REDDIT_APP_CLIENT_SECRET")
 
+        self.reddit_token = self._get_reddit_token()
         reddit = praw.Reddit(
-            client_id=credentials.APP_CLIENT_ID,
-            client_secret=credentials.APP_CLIENT_SECRET,
-            user_agent=credentials.USER_AGENT,
+            client_id=self.APP_CLIENT_ID,
+            client_secret=self.APP_CLIENT_SECRET,
+            user_agent=self.USER_AGENT,
         )
         self.anime_subreddit = reddit.subreddit("anime")
 
     def get_discussion_url(self, episode: Episode) -> str:
-        query = Reddit._create_reddit_search_query(episode)
+        query = self._create_reddit_search_query(episode)
         if query:
             submissions = self.anime_subreddit.search(query)
             submission = next(submissions, None)
             # Only return a URL here if there is only a single matching submission
             if submission and not next(submissions, None):
                 return submission.url
-        return Reddit._get_blind_search_url(episode)
+        return self._get_blind_search_url(episode)
 
-    @staticmethod
-    def _get_blind_search_url(episode: Episode):
+    def _get_blind_search_url(self, episode: Episode):
         query = [
             "flair:episode",
             episode.anime_title,
@@ -44,17 +48,17 @@ class Reddit:
         encoded_params = urllib.parse.urlencode(params)
         return f"https://www.reddit.com/r/anime/search?{encoded_params}"
 
-    @staticmethod
-    def _get_reddit_token():
+    def _get_reddit_token(self):
         client_auth = requests.auth.HTTPBasicAuth(
-            credentials.APP_CLIENT_ID, credentials.APP_CLIENT_SECRET
+            self.APP_CLIENT_ID,
+            self.APP_CLIENT_SECRET,
         )
         post_data = {
             "grant_type": "password",
-            "username": credentials.USERNAME,
-            "password": credentials.PASSWORD,
+            "username": self.USERNAME,
+            "password": self.PASSWORD,
         }
-        headers = {"User-Agent": credentials.USER_AGENT}
+        headers = {"User-Agent": self.USER_AGENT}
         response = requests.post(
             "https://www.reddit.com/api/v1/access_token",
             auth=client_auth,
@@ -63,8 +67,7 @@ class Reddit:
         )
         return response.json().get("access_token")
 
-    @staticmethod
-    def _create_reddit_search_query(episode: Episode):
+    def _create_reddit_search_query(self, episode: Episode):
         if not episode.anilist_data:
             return None
         title_terms = " OR ".join(

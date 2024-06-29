@@ -3,3 +3,4 @@ anitopy
 inquirer
 requests
 praw
+python-dotenv

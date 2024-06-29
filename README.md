@@ -10,3 +10,9 @@ An all-in-one command-line program to streamline your anime experience from star
 
 ### Platforms
 This script has only been tested on Windows.
+
+### Secrets
+Various secrets are required:
+* Reddit: Create an application on [Reddit](https://reddit.com/prefs/apps/)
+
+Create a ".env" file in the project root directory in the format of "[.env.sample](.env.sample)" and add the secrets for each service.

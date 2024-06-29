@@ -8,6 +8,7 @@ import qbittorrentapi
 from anilist import find_and_set_data
 from common import Episode
 from reddit import Reddit
+from dotenv import load_dotenv
 
 PROGRESS_COMPLETE = 1
 
@@ -76,7 +77,7 @@ class AniFlow:
             return
         else:
             self.episode_choice = episode_choice
-            os.startfile(self.episode_choice.path)
+            # os.startfile(self.episode_choice.path)
             find_and_set_data(self.episode_choice)
 
     def maybe_open_reddit_discussion(self):
@@ -144,6 +145,7 @@ class AniFlow:
             os.remove(self.episode_choice.path)
 
     def init(self):
+        load_dotenv()
         conn_info = dict(
             host="localhost",
             port=8080,
@@ -161,10 +163,10 @@ class AniFlow:
                     self.select_episode()
                 elif not self.open_reddit_discussion_asked:
                     self.maybe_open_reddit_discussion()
-                elif not self.open_anilist_asked:
-                    self.maybe_open_anilist()
-                elif not self.delete_torrent_asked:
-                    self.maybe_delete_file()
+                # elif not self.open_anilist_asked:
+                #     self.maybe_open_anilist()
+                # elif not self.delete_torrent_asked:
+                #     self.maybe_delete_file()
                 else:
                     self.reset()
         except KeyboardInterrupt:
@@ -175,7 +177,7 @@ class AniFlow:
         self.open_reddit_discussion_asked = False
         self.open_anilist_asked = False
         self.delete_torrent_asked = False
-        os.system("cls")
+        # os.system("cls")
 
 
 AniFlow().start()
