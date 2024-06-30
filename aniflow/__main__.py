@@ -45,7 +45,7 @@ class AniFlow:
         else:
             self.state = State.OPEN_REDDIT_DISCUSSION
             self.episode_choice = choice
-            os.startfile(self.episode_choice.path)
+            # os.startfile(self.episode_choice.path)
             self.anilist.find_and_set_data(self.episode_choice)
 
     def open_reddit_discussion(self):
@@ -128,10 +128,13 @@ class AniFlow:
                         self.open_anilist()
                     case State.DELETE_FILE:
                         self.delete_file()
+                    case _:
+                        self.reset()
         except KeyboardInterrupt:
             exit()
 
     def reset(self):
+        self.state = State.SELECT_EPISODE
         self.episode_choice = None
         os.system("cls")
 
