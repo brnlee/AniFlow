@@ -20,10 +20,17 @@ class Qbittorrent:
         self.torrents = {}
 
     def get_episodes(self):
-        episodes = set()
+        episodes = []
         for torrent in self._get_torrents():
-            episodes |= self._get_episodes_per_torrent(torrent)
-        return episodes
+            episodes.extend(self._get_episodes_per_torrent(torrent))
+        return sorted(
+            episodes,
+            key=lambda ep: (
+                ep.anime_title,
+                ep.season,
+                float(ep.episode_number) if ep.episode_number else None,
+            ),
+        )
 
     def delete(self, episode: Episode):
         if episode.can_delete_torrent:
@@ -36,7 +43,7 @@ class Qbittorrent:
         return self.client.torrents_info(category="Anime", sort="name")
 
     def _get_episodes_per_torrent(self, torrent):
-        episodes = set()
+        episodes = []
         for index, file in enumerate(torrent.files):
             if file.get("progress") == self.PROGRESS_COMPLETE and file.priority == 1:
                 path = Path(torrent.save_path) / file.name
@@ -49,7 +56,6 @@ class Qbittorrent:
                     torrent.hash,
                     index == len(torrent.files) - 1,  # can_delete_torrent
                 )
-                episodes.add(episode)
+                episodes.append(episode)
                 self.torrents[episode] = torrent
-
         return episodes

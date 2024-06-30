@@ -16,7 +16,7 @@ class State(Enum):
     AUTH_ANILIST = 3
     UPDATE_ANILIST = 4
     OPEN_ANILIST = 5
-    DELETE_FILE = 6
+    DELETE_EPISODE = 6
 
 
 class AniFlow:
@@ -45,8 +45,8 @@ class AniFlow:
                         self.update_anilist()
                     case State.OPEN_ANILIST:
                         self.open_anilist()
-                    case State.DELETE_FILE:
-                        self.delete_file()
+                    case State.DELETE_EPISODE:
+                        self.delete_episode()
                     case _:
                         self.state = State.SELECT_EPISODE
         except KeyboardInterrupt:
@@ -57,19 +57,12 @@ class AniFlow:
         os.system("cls")
 
     def select_episode(self):
-        reload_episodes = "[Reload Episodes]"
+        reload_episodes_choice = "[Reload Episodes]"
 
-        choices = sorted(
-            [episode for episode in self.qbittorrent.get_episodes()],
-            key=lambda ep: (
-                ep.anime_title,
-                ep.season,
-                float(ep.episode_number) if ep.episode_number else None,
-            ),
-        ) + [reload_episodes]
-
+        choices = self.qbittorrent.get_episodes()
+        choices.append(reload_episodes_choice)
         choice = prompt.list("What do you want to watch?", choices)
-        if choice is reload_episodes:
+        if choice is reload_episodes_choice:
             return
         else:
             self.state = State.OPEN_REDDIT_DISCUSSION
@@ -82,10 +75,8 @@ class AniFlow:
 
         reddit_url = self.reddit.get_discussion_url(self.episode_choice)
 
-        should_open_reddit_discussion = prompt.confirm(
-            "Open r/anime discussion thread?"
-        )
-        if should_open_reddit_discussion:
+        open_reddit_discussion = prompt.confirm("Open r/anime discussion thread?")
+        if open_reddit_discussion:
             webbrowser.open_new(reddit_url)
 
     def auth_anilist(self):
@@ -94,9 +85,9 @@ class AniFlow:
         if not self.anilist.should_auth():
             return
 
-        should_proceed = prompt.confirm("AniList requires authorization. Proceed?")
-        if not should_proceed:
-            self.state = State.DELETE_FILE
+        proceed = prompt.confirm("AniList requires authorization. Proceed?")
+        if not proceed:
+            self.state = State.DELETE_EPISODE
             return
 
         self.anilist.get_access_token()
@@ -110,27 +101,27 @@ class AniFlow:
         if not self.episode_choice.anilist_data:
             return
 
-        update_anilist_progress = prompt.confirm("Update progress on AniList?")
-        if update_anilist_progress:
-            encountered_auth_error = self.anilist.update_progress(self.episode_choice)
+        update_anilist = prompt.confirm("Update AniList?")
+        if update_anilist:
+            encountered_auth_error = self.anilist.update_entry(self.episode_choice)
             if encountered_auth_error:
                 self.state = State.AUTH_ANILIST
 
     def open_anilist(self):
-        self.state = State.DELETE_FILE
+        self.state = State.DELETE_EPISODE
 
         if not self.episode_choice.is_last_episode():
             return
 
-        should_open_anilist = prompt.confirm("Open AniList entry?")
-        if should_open_anilist:
+        open_anilist = prompt.confirm("Open AniList entry?")
+        if open_anilist:
             webbrowser.open_new(self.episode_choice.anilist_data.entry_url)
 
-    def delete_file(self):
+    def delete_episode(self):
         self.state = State.SELECT_EPISODE
 
-        should_delete_torrent = prompt.confirm("Delete torrent?", default=False)
-        if should_delete_torrent:
+        delete_episode = prompt.confirm("Delete episode?", default=False)
+        if delete_episode:
             self.qbittorrent.delete(self.episode_choice)
 
 

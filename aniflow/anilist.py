@@ -67,7 +67,7 @@ class AniList:
         self._token = None
         unset_key(".env", self.KEY_ANILIST_TOKEN)
 
-    def update_progress(self, episode: Episode) -> bool:
+    def update_entry(self, episode: Episode) -> bool:
         """Returns True if there is an Auth error"""
 
         query = """
