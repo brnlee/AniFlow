@@ -20,12 +20,41 @@ class State(Enum):
 
 
 class AniFlow:
-    state: State = State.SELECT_EPISODE
-    episode_choice: Episode = None
 
-    qbittorrent = None
-    reddit = None
-    anilist = None
+    def __init__(self):
+        load_dotenv()
+        self.qbittorrent = Qbittorrent()
+        self.reddit = Reddit()
+        self.anilist = AniList()
+
+        self.state = State.SELECT_EPISODE
+        self.episode_choice: Episode
+
+    def start(self):
+        try:
+            while True:
+                match (self.state):
+                    case State.SELECT_EPISODE:
+                        self.reset()
+                        self.select_episode()
+                    case State.OPEN_REDDIT_DISCUSSION:
+                        self.open_reddit_discussion()
+                    case State.AUTH_ANILIST:
+                        self.auth_anilist()
+                    case State.UPDATE_ANILIST:
+                        self.update_anilist()
+                    case State.OPEN_ANILIST:
+                        self.open_anilist()
+                    case State.DELETE_FILE:
+                        self.delete_file()
+                    case _:
+                        self.state = State.SELECT_EPISODE
+        except KeyboardInterrupt:
+            exit()
+
+    def reset(self):
+        self.episode_choice = None
+        os.system("cls")
 
     def select_episode(self):
         reload_episodes = "[Reload Episodes]"
@@ -103,39 +132,6 @@ class AniFlow:
         should_delete_torrent = prompt.confirm("Delete torrent?", default=False)
         if should_delete_torrent:
             self.qbittorrent.delete(self.episode_choice)
-
-    def init(self):
-        load_dotenv()
-        self.qbittorrent = Qbittorrent()
-        self.reddit = Reddit()
-        self.anilist = AniList()
-
-    def reset(self):
-        self.episode_choice = None
-        os.system("cls")
-
-    def start(self):
-        self.init()
-        try:
-            while True:
-                match (self.state):
-                    case State.SELECT_EPISODE:
-                        self.reset()
-                        self.select_episode()
-                    case State.OPEN_REDDIT_DISCUSSION:
-                        self.open_reddit_discussion()
-                    case State.AUTH_ANILIST:
-                        self.auth_anilist()
-                    case State.UPDATE_ANILIST:
-                        self.update_anilist()
-                    case State.OPEN_ANILIST:
-                        self.open_anilist()
-                    case State.DELETE_FILE:
-                        self.delete_file()
-                    case _:
-                        self.state = State.SELECT_EPISODE
-        except KeyboardInterrupt:
-            exit()
 
 
 if __name__ == "__main__":
