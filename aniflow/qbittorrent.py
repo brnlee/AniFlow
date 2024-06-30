@@ -1,10 +1,10 @@
 import os
+from mimetypes import guess_type
 from os import getenv
 from pathlib import Path
 
-from qbittorrentapi import Client
-
 from common import Episode
+from qbittorrentapi import Client
 
 
 class Qbittorrent:
@@ -47,7 +47,7 @@ class Qbittorrent:
         for index, file in enumerate(torrent.files):
             if file.get("progress") == self.PROGRESS_COMPLETE and file.priority == 1:
                 path = Path(torrent.save_path) / file.name
-                if not path.exists():
+                if not path.exists() or not self._is_video_file(path):
                     continue
                 episode = Episode(
                     file.index,
@@ -59,3 +59,6 @@ class Qbittorrent:
                 episodes.append(episode)
                 self.torrents[episode] = torrent
         return episodes
+
+    def _is_video_file(self, path):
+        return guess_type(path)[0].startswith("video")
