@@ -15,10 +15,18 @@ An all-in-one command-line program to streamline your anime experience from star
 pip install -r requirements.txt
 ```
 
+### qBittorrent
+Enable "Web UI":
+1. Go to Options
+2. Press Web UI
+3. Enable "Web User Interface (Remote Control)"
+4. Ensure "Port" is set to 8080
+5. Enable "Bypass authentication for clients on localhost"
+
 ### Secrets
 Various secrets are required:
 * Reddit: Create an application on [Reddit](https://reddit.com/prefs/apps/)
-* AniList: Create a client on [Aniflow](https://anilist.co/settings/developer)
+* AniList: Create a client on [AniList](https://anilist.co/settings/developer)
 
 Create a ".env" file in the project root directory in the format of "[.env.sample](.env.sample)" and add the secrets for each service.
 
