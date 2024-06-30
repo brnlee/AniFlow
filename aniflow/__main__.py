@@ -65,9 +65,14 @@ class AniFlow:
         if not self.anilist.should_auth():
             return
 
+        should_proceed = prompt.confirm("AniList requires authorization. Proceed?")
+        if not should_proceed:
+            self.state = State.DELETE_FILE
+            return
+
         self.anilist.get_access_token()
 
-        access_token = prompt.text("Enter the Auth Pin from AniList")
+        access_token = prompt.text("Paste the token provided by AniList")
         self.anilist.set_access_token(access_token)
 
     def update_anilist_progress(self):
@@ -81,7 +86,6 @@ class AniFlow:
             encountered_auth_error = self.anilist.update_progress(self.episode_choice)
             if encountered_auth_error:
                 self.state = State.AUTH_ANILIST
-                return
 
     def open_anilist(self):
         self.state = State.DELETE_FILE
