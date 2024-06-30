@@ -125,6 +125,10 @@ class AniFlow:
         self.auth_anilist_asked = True
 
     def maybe_update_anilist_progress(self):
+        if not self.episode_choice.anilist_data:
+            self.update_anilist_progress_asked = True
+            return
+
         inquirer_update_anilist_progress = "update_anilist_progress"
         update_anilist_progress = inquirer.prompt(
             [

@@ -62,6 +62,7 @@ class Episode:
 
 class AniListData:
 
+    id = None
     titles = None
     episode_count = None
     entry_url = None

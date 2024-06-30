@@ -1,6 +1,5 @@
 import webbrowser
 from os import getenv
-from xmlrpc.client import Boolean
 
 import requests
 from dotenv import set_key, unset_key
@@ -10,7 +9,10 @@ from common import AniListData, Episode, nested_get
 
 class AniList:
 
-    URL = "https://graphql.anilist.co"
+    AUTH_URL = (
+        "https://anilist.co/api/v2/oauth/authorize?client_id={}&response_type=token"
+    )
+    GRAPHQL_URL = "https://graphql.anilist.co"
     KEY_ANILIST_CLIENT_ID = "ANILIST_CLIENT_ID"
     KEY_ANILIST_TOKEN = "ANILIST_TOKEN"
 
@@ -55,8 +57,7 @@ class AniList:
 
     def get_access_token(self):
         client_id = getenv(self.KEY_ANILIST_CLIENT_ID)
-        auth_url = f"https://anilist.co/api/v2/oauth/authorize?client_id={client_id}&response_type=token"
-        webbrowser.open(auth_url)
+        webbrowser.open(self.AUTH_URL.format(client_id))
 
     def set_access_token(self, token):
         self._token = token
@@ -66,8 +67,9 @@ class AniList:
         self._token = None
         unset_key(".env", self.KEY_ANILIST_TOKEN)
 
-    def update_progress(self, episode: Episode) -> Boolean:
+    def update_progress(self, episode: Episode) -> bool:
         """Returns True if there is an Auth error"""
+
         query = """
         mutation ($mediaId: Int, $status: MediaListStatus, $progress: Int) {
             SaveMediaListEntry (mediaId: $mediaId, status: $status, progress: $progress) {
@@ -86,7 +88,9 @@ class AniList:
         }
 
         response = requests.post(
-            self.URL, json={"query": query, "variables": variables}, headers=headers
+            self.GRAPHQL_URL,
+            json={"query": query, "variables": variables},
+            headers=headers,
         )
         match response.status_code:
             case 200:
@@ -125,7 +129,7 @@ class AniList:
         variables = {"search": search_title}
 
         response = requests.post(
-            self.URL, json={"query": query, "variables": variables}
+            self.GRAPHQL_URL, json={"query": query, "variables": variables}
         )
         if response.status_code != 200:
             return
