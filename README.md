@@ -1,13 +1,13 @@
 # AniFlow
-An all-in-one command-line program to streamline your anime experience from start to finish.
+An all-in-one CLI program to streamline your anime watching experience.
 
 ## Features
-* List ready-to-watch episodes from [qBittorrent](https://www.qbittorrent.org/)
-* Open the episode you want watch with your video player
-* Bring up the [r/anime](https://reddit.com/r/anime/) episode discussion thread
-* Update the progress after each episode in AniList
-* Open the AniList entry after the final episode has been watched
-* Remove the episode from your system & qBittorrent
+* Lists ready-to-watch episodes from [qBittorrent](https://www.qbittorrent.org/)
+* Plays the episode you want to watch with your video player
+* Brings up the [r/anime](https://reddit.com/r/anime/) episode discussion thread
+* Updates the status and episode progress on [AniList](https://anilist.co)
+* Opens the [AniList](https://anilist.co) entry after the final episode has been watched
+* Removes the episode from your system & qBittorrent
 
 ## Setup
 ### Dependencies
