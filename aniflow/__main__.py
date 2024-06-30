@@ -85,9 +85,11 @@ class AniFlow:
         if not self.anilist.should_auth():
             return
 
-        proceed = prompt.confirm("AniList requires authorization. Proceed?")
+        proceed = prompt.confirm(
+            "AniList requires your authorization in order to update your anime list. Proceed?"
+        )
         if not proceed:
-            self.state = State.DELETE_EPISODE
+            self.state = State.OPEN_ANILIST
             return
 
         self.anilist.get_access_token()
@@ -113,7 +115,7 @@ class AniFlow:
         if not self.episode_choice.is_last_episode():
             return
 
-        open_anilist = prompt.confirm("Open AniList entry?")
+        open_anilist = prompt.confirm("Open AniList page for the anime?")
         if open_anilist:
             webbrowser.open_new(self.episode_choice.anilist_data.entry_url)
 
