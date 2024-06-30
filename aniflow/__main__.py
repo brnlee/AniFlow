@@ -1,15 +1,12 @@
 import os
 import webbrowser
 
-import inquirer
-from dotenv import load_dotenv
-
+import prompt
 from anilist import AniList
 from common import Episode
+from dotenv import load_dotenv
 from qbittorrent import Qbittorrent
 from reddit import Reddit
-
-RELOAD = "[Reload Episodes]"
 
 
 class AniFlow:
@@ -22,30 +19,20 @@ class AniFlow:
     update_anilist_progress_asked = False
     open_anilist_asked = False
     delete_torrent_asked = False
+    RELOAD = "[Reload Episodes]"
 
     def select_episode(self):
-        inquirer_episode_choice = "episode choice"
-        questions = [
-            inquirer.List(
-                inquirer_episode_choice,
-                message="What do you want to watch?",
-                choices=sorted(
-                    [episode for episode in self.qbittorrent.get_episodes()],
-                    key=lambda ep: (
-                        ep.anime_title,
-                        ep.season,
-                        float(ep.episode_number) if ep.episode_number else None,
-                    ),
-                )
-                + [RELOAD],
-                carousel=True,
-            )
-        ]
+        choices = sorted(
+            [episode for episode in self.qbittorrent.get_episodes()],
+            key=lambda ep: (
+                ep.anime_title,
+                ep.season,
+                float(ep.episode_number) if ep.episode_number else None,
+            ),
+        ) + [self.RELOAD]
 
-        episode_choice = inquirer.prompt(questions, raise_keyboard_interrupt=True).get(
-            inquirer_episode_choice
-        )
-        if episode_choice == RELOAD:
+        episode_choice = prompt.list("What do you want to watch?", choices)
+        if episode_choice == self.RELOAD:
             return
         else:
             self.episode_choice = episode_choice
@@ -55,17 +42,9 @@ class AniFlow:
     def maybe_open_reddit_discussion(self):
         reddit_url = self.reddit.get_discussion_url(self.episode_choice)
 
-        inquirer_open_reddit_discussion = "reddit"
-        should_open_reddit_discussion = inquirer.prompt(
-            [
-                inquirer.Confirm(
-                    inquirer_open_reddit_discussion,
-                    message="Open r/anime discussion thread?",
-                    default=True,
-                )
-            ],
-            raise_keyboard_interrupt=True,
-        ).get(inquirer_open_reddit_discussion)
+        should_open_reddit_discussion = prompt.confirm(
+            "Open r/anime discussion thread?"
+        )
 
         if should_open_reddit_discussion:
             webbrowser.open_new(reddit_url)
@@ -79,16 +58,7 @@ class AniFlow:
 
         self.anilist.get_access_token()
 
-        inquirer_anilist_auth = "anilist_auth"
-        access_token = inquirer.prompt(
-            [
-                inquirer.Text(
-                    inquirer_anilist_auth,
-                    message="Enter the Auth Pin from AniList",
-                )
-            ],
-            raise_keyboard_interrupt=True,
-        ).get(inquirer_anilist_auth)
+        access_token = prompt.text("Enter the Auth Pin from AniList")
         self.anilist.set_access_token(access_token)
 
         self.auth_anilist_asked = True
@@ -98,18 +68,7 @@ class AniFlow:
             self.update_anilist_progress_asked = True
             return
 
-        inquirer_update_anilist_progress = "update_anilist_progress"
-        update_anilist_progress = inquirer.prompt(
-            [
-                inquirer.Confirm(
-                    inquirer_update_anilist_progress,
-                    message="Update progress on AniList?",
-                    default=True,
-                )
-            ],
-            raise_keyboard_interrupt=True,
-        ).get(inquirer_update_anilist_progress)
-
+        update_anilist_progress = prompt.confirm("Update progress on AniList?")
         if update_anilist_progress:
             encountered_auth_error = self.anilist.update_progress(self.episode_choice)
             if encountered_auth_error:
@@ -124,28 +83,12 @@ class AniFlow:
         if not self.episode_choice.is_last_episode():
             return
 
-        inquirer_open_anilist = "anilist"
-        should_open_anilist = inquirer.prompt(
-            [
-                inquirer.Confirm(
-                    inquirer_open_anilist,
-                    message="Open AniList entry?",
-                    default=True,
-                )
-            ],
-            raise_keyboard_interrupt=True,
-        ).get(inquirer_open_anilist)
-
+        should_open_anilist = prompt.confirm("Open AniList entry?")
         if should_open_anilist:
             webbrowser.open_new(self.episode_choice.anilist_data.entry_url)
 
     def maybe_delete_file(self):
-        inquirer_delete_torrent = "delete"
-        should_delete_torrent = inquirer.prompt(
-            [inquirer.Confirm(inquirer_delete_torrent, message="Delete torrent?")],
-            raise_keyboard_interrupt=True,
-        ).get(inquirer_delete_torrent)
-
+        should_delete_torrent = prompt.confirm("Delete torrent?", default=False)
         if should_delete_torrent:
             self.qbittorrent.delete(self.episode_choice)
         self.delete_torrent_asked = True
