@@ -66,7 +66,7 @@ class AniFlow:
         else:
             self.state = State.OPEN_REDDIT_DISCUSSION
             self.episode_choice = choice
-            # os.startfile(self.episode_choice.path)
+            os.startfile(self.episode_choice.path)
             self.anilist.find_and_set_data(self.episode_choice)
 
     def open_reddit_discussion(self):
@@ -91,7 +91,7 @@ class AniFlow:
             self.state = State.OPEN_ANILIST
             return
 
-        self.anilist.get_access_token()
+        self.anilist.open_authorization_page()
 
         access_token = prompt.password("Paste the token provided by AniList")
         self.anilist.set_access_token(access_token)

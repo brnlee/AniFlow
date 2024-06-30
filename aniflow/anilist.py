@@ -1,20 +1,24 @@
 import webbrowser
 from os import getenv
 
+import editdistance
 import requests
-from dotenv import set_key, unset_key
-
 from common import AniListData, Episode, nested_get
+from dotenv import set_key, unset_key
 
 
 class AniList:
 
-    AUTH_URL = (
-        "https://anilist.co/api/v2/oauth/authorize?client_id={}&response_type=token"
-    )
     GRAPHQL_URL = "https://graphql.anilist.co"
     KEY_ANILIST_CLIENT_ID = "ANILIST_CLIENT_ID"
     KEY_ANILIST_TOKEN = "ANILIST_TOKEN"
+
+    EDIT_DISTANCE_LEEWAY = 1
+    """ 
+    Number of characters that can be different.
+
+    Currently at 1 to account for "wo" <-> "o"
+    """
 
     def __init__(self) -> None:
         self._token = getenv("ANILIST_TOKEN")
@@ -29,15 +33,16 @@ class AniList:
 
         clean_title = self.clean_string(episode.anime_title)
         clean_title_to_compare = self.clean_string(title_to_compare)
-        season = episode.season
 
-        if not season:
-            return clean_title == clean_title_to_compare
-
-        if clean_title not in clean_title_to_compare:
+        if not editdistance.distance_le_than(
+            clean_title, clean_title_to_compare, self.EDIT_DISTANCE_LEEWAY
+        ):
             return False
+
+        season = episode.season
         return (
-            clean_title_to_compare.endswith(season)
+            not season
+            or clean_title_to_compare.endswith(season)
             or self.clean_string(f"Season {season}") in clean_title_to_compare
             or self.clean_string(f"S{season}") in clean_title_to_compare
         )
@@ -55,9 +60,10 @@ class AniList:
     def should_auth(self):
         return not self._token
 
-    def get_access_token(self):
+    def open_authorization_page(self):
         client_id = getenv(self.KEY_ANILIST_CLIENT_ID)
-        webbrowser.open(self.AUTH_URL.format(client_id))
+        url = f"https://anilist.co/api/v2/oauth/authorize?client_id={client_id}&response_type=token"
+        webbrowser.open(url)
 
     def set_access_token(self, token):
         self._token = token
@@ -111,7 +117,7 @@ class AniList:
     def find_and_set_data(self, episode: Episode):
         query = """
         query ($search: String) {
-        anime: Page(perPage: 10) {
+        anime: Page(perPage: 2) {
             results: media(type: ANIME, search: $search) {
             id
             title {
