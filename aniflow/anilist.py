@@ -4,7 +4,7 @@ from os import getenv
 
 import requests
 from common import Episode, nested_get
-from dotenv import set_key, unset_key
+from dotenv import find_dotenv, set_key, unset_key
 
 
 class AniList:
@@ -28,11 +28,11 @@ class AniList:
 
     def set_access_token(self, token):
         self._token = token
-        set_key(".env", self.KEY_ANILIST_TOKEN, self._token)
+        set_key(find_dotenv(), self.KEY_ANILIST_TOKEN, self._token)
 
     def clear_access_token(self):
         self._token = None
-        unset_key(".env", self.KEY_ANILIST_TOKEN)
+        unset_key(find_dotenv(), self.KEY_ANILIST_TOKEN)
 
     def clean_string(self, string):
         """Removes all non-alphanumeric characters for string comparison"""
