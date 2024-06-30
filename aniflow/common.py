@@ -30,6 +30,9 @@ class Episode:
 
         return int(self.episode_number) is int(self.anilist_data.episode_count)
 
+    def set_anilist_data(self, anime):
+        self.anilist_data = AniListData(anime)
+
     def _get_file_name(self):
         """Returns the file name after removing any directory paths"""
         return self.file_name.split("/")[-1]
@@ -62,10 +65,11 @@ class Episode:
 
 class AniListData:
 
-    id = None
-    titles = None
-    episode_count = None
-    entry_url = None
+    def __init__(self, anime) -> None:
+        self.id = anime.get("id")
+        self.titles = anime.get("titles")
+        self.episode_count = anime.get("episodes")
+        self.entry_url = anime.get("siteUrl")
 
 
 def nested_get(dic, keys):

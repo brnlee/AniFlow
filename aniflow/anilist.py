@@ -3,7 +3,7 @@ from difflib import SequenceMatcher
 from os import getenv
 
 import requests
-from common import AniListData, Episode, nested_get
+from common import Episode, nested_get
 from dotenv import set_key, unset_key
 
 
@@ -38,35 +38,34 @@ class AniList:
         """Removes all non-alphanumeric characters for string comparison"""
         return "".join(char for char in string if char.isalnum()).lower()
 
-    def do_titles_match(self, episode: Episode, title_to_compare: str):
-        if not title_to_compare:
-            return False
+    def _titles_match(self, sequence_matcher, titles, season):
+        for title in titles:
+            if not title:
+                continue
+            clean_title = self.clean_string(title)
 
-        clean_title = self.clean_string(episode.anime_title)
-        clean_title_to_compare = self.clean_string(title_to_compare)
+            sequence_matcher.set_seq1(clean_title)
+            if sequence_matcher.ratio() < self.MIN_TITLE_SIMILARITY_RATIO:
+                continue
 
-        if (
-            SequenceMatcher(None, clean_title, clean_title_to_compare).ratio()
-            < self.MIN_TITLE_SIMILARITY_RATIO
-        ):
-            return False
-
-        season = episode.season
-        return (
-            not season
-            or clean_title_to_compare.endswith(season)
-            or self.clean_string(f"Season {season}") in clean_title_to_compare
-            or self.clean_string(f"S{season}") in clean_title_to_compare
-        )
+            if (
+                not season
+                or clean_title.endswith(season)
+                or self.clean_string(f"Season {season}") in clean_title
+                or self.clean_string(f"S{season}") in clean_title
+            ):
+                return True
+        return False
 
     def match_anime(self, episode: Episode, results):
+        sequence_matcher = SequenceMatcher(
+            None, a=None, b=self.clean_string(episode.anime_title)
+        )
         for anime in results:
-            anime["titles"] = [title for title in anime.get("title").values() if title]
-            if anime.get("synonyms"):
-                anime["titles"].extend(sorted(anime.get("synonyms")))
-            if any(
-                map(lambda title: self.do_titles_match(episode, title), anime["titles"])
-            ) and int(episode.episode_number) <= anime.get("episodes"):
+            titles = [title for title in anime.get("title").values() if title]
+            titles.extend(sorted(anime.get("synonyms", [])))
+            if self._titles_match(sequence_matcher, titles, episode.season):
+                anime["titles"] = titles
                 return anime
 
     def update_entry(self, episode: Episode) -> bool:
@@ -140,11 +139,6 @@ class AniList:
 
         anime = self.match_anime(episode, results)
         if not anime:
+            print("Failed to find anime on AniList")
             return
-
-        anilist_data = AniListData()
-        anilist_data.id = anime.get("id")
-        anilist_data.titles = anime.get("titles")
-        anilist_data.episode_count = anime.get("episodes")
-        anilist_data.entry_url = anime.get("siteUrl")
-        episode.anilist_data = anilist_data
+        episode.set_anilist_data(anime)
