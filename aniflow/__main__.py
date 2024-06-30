@@ -59,15 +59,14 @@ class AniFlow:
     def select_episode(self):
         reload_episodes_choice = "[Reload Episodes]"
 
-        choices = self.qbittorrent.get_episodes()
-        choices.append(reload_episodes_choice)
+        choices = [reload_episodes_choice] + self.qbittorrent.get_episodes()
         choice = prompt.list("What do you want to watch?", choices)
         if choice is reload_episodes_choice:
             return
         else:
             self.state = State.OPEN_REDDIT_DISCUSSION
             self.episode_choice = choice
-            os.startfile(self.episode_choice.path)
+            # os.startfile(self.episode_choice.path)
             self.anilist.find_and_set_data(self.episode_choice)
 
     def open_reddit_discussion(self):
