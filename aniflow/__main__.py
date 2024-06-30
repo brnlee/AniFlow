@@ -45,7 +45,7 @@ class AniFlow:
         else:
             self.state = State.OPEN_REDDIT_DISCUSSION
             self.episode_choice = choice
-            # os.startfile(self.episode_choice.path)
+            os.startfile(self.episode_choice.path)
             self.anilist.find_and_set_data(self.episode_choice)
 
     def open_reddit_discussion(self):
@@ -75,7 +75,7 @@ class AniFlow:
         access_token = prompt.text("Paste the token provided by AniList")
         self.anilist.set_access_token(access_token)
 
-    def update_anilist_progress(self):
+    def update_anilist(self):
         self.state = State.OPEN_ANILIST
 
         if not self.episode_choice.anilist_data:
@@ -110,6 +110,10 @@ class AniFlow:
         self.reddit = Reddit()
         self.anilist = AniList()
 
+    def reset(self):
+        self.episode_choice = None
+        os.system("cls")
+
     def start(self):
         self.init()
         try:
@@ -123,20 +127,15 @@ class AniFlow:
                     case State.AUTH_ANILIST:
                         self.auth_anilist()
                     case State.UPDATE_ANILIST:
-                        self.update_anilist_progress()
+                        self.update_anilist()
                     case State.OPEN_ANILIST:
                         self.open_anilist()
                     case State.DELETE_FILE:
                         self.delete_file()
                     case _:
-                        self.reset()
+                        self.state = State.SELECT_EPISODE
         except KeyboardInterrupt:
             exit()
-
-    def reset(self):
-        self.state = State.SELECT_EPISODE
-        self.episode_choice = None
-        os.system("cls")
 
 
 if __name__ == "__main__":
