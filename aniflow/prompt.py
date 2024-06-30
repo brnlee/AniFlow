@@ -3,33 +3,28 @@ import inquirer
 KEY = "KEY"
 
 
+def prompt(question):
+    return inquirer.prompt([question], raise_keyboard_interrupt=True).get(KEY)
+
+
 def confirm(message, default=True):
-    return inquirer.prompt(
-        [
-            inquirer.Confirm(
-                KEY,
-                message=message,
-                default=default,
-            )
-        ],
-        raise_keyboard_interrupt=True,
-    ).get(KEY)
+    return prompt(
+        inquirer.Confirm(
+            KEY,
+            message=message,
+            default=default,
+        )
+    )
 
 
 def list(message, choices):
-    return inquirer.prompt(
-        [inquirer.List(KEY, message=message, choices=choices, carousel=True)],
-        raise_keyboard_interrupt=True,
-    ).get(KEY)
+    return prompt(inquirer.List(KEY, message=message, choices=choices, carousel=True))
 
 
 def text(message):
-    return inquirer.prompt(
-        [
-            inquirer.Text(
-                KEY,
-                message=message,
-            )
-        ],
-        raise_keyboard_interrupt=True,
-    ).get(KEY)
+    return prompt(
+        inquirer.Text(
+            KEY,
+            message=message,
+        )
+    )
