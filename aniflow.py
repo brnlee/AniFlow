@@ -9,7 +9,6 @@ from common import Episode
 from qbittorrent import Qbittorrent
 from reddit import Reddit
 
-
 RELOAD = "[Reload Episodes]"
 
 
@@ -146,7 +145,7 @@ class AniFlow:
             [inquirer.Confirm(inquirer_delete_torrent, message="Delete torrent?")],
             raise_keyboard_interrupt=True,
         ).get(inquirer_delete_torrent)
-        
+
         if should_delete_torrent:
             self.qbittorrent.delete(self.episode_choice)
         self.delete_torrent_asked = True

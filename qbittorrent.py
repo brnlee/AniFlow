@@ -1,7 +1,8 @@
 import os
-from pathlib import Path
-from qbittorrentapi import Client
 from os import getenv
+from pathlib import Path
+
+from qbittorrentapi import Client
 
 from common import Episode
 
@@ -21,7 +22,7 @@ class Qbittorrent:
     def get_episodes(self):
         episodes = set()
         for torrent in self._get_torrents():
-            episodes |= self.get_episodes_per_torrent(torrent)
+            episodes |= self._get_episodes_per_torrent(torrent)
         return episodes
 
     def delete(self, episode: Episode):
@@ -34,7 +35,7 @@ class Qbittorrent:
     def _get_torrents(self):
         return self.client.torrents_info(category="Anime", sort="name")
 
-    def get_episodes_per_torrent(self, torrent):
+    def _get_episodes_per_torrent(self, torrent):
         episodes = set()
         for index, file in enumerate(torrent.files):
             if file.get("progress") == self.PROGRESS_COMPLETE and file.priority == 1:
