@@ -54,7 +54,7 @@ class Qbittorrent:
                     file.name,
                     str(path),
                     torrent.hash,
-                    index == len(torrent.files) - 1,  # can_delete_torrent
+                    can_delete_torrent=index == len(torrent.files) - 1,
                 )
                 episodes.append(episode)
                 self.torrents[episode] = torrent
