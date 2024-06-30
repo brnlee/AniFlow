@@ -1,16 +1,14 @@
 import os
 import webbrowser
-from pathlib import Path
 
 import inquirer
-import qbittorrentapi
 from dotenv import load_dotenv
 
 from anilist import AniList
 from common import Episode
+from qbittorrent import Qbittorrent
 from reddit import Reddit
 
-PROGRESS_COMPLETE = 1
 
 RELOAD = "[Reload Episodes]"
 
@@ -19,7 +17,6 @@ class AniFlow:
     qbittorrent = None
     reddit = None
     anilist = None
-    torrents = {}
     episode_choice: Episode = None
     open_reddit_discussion_asked = False
     auth_anilist_asked = False
@@ -27,41 +24,14 @@ class AniFlow:
     open_anilist_asked = False
     delete_torrent_asked = False
 
-    def get_torrents_info(self):
-        return self.qbittorrent.torrents_info(category="Anime", sort="name")
-
-    def get_episodes(self, torrent):
-        episodes = set()
-        for index, file in enumerate(torrent.files):
-            if file.get("progress") == PROGRESS_COMPLETE and file.priority == 1:
-                path = Path(torrent.save_path) / file.name
-                if not path.exists():
-                    continue
-                episode = Episode(
-                    file.index,
-                    file.name,
-                    str(path),
-                    torrent.hash,
-                    index == len(torrent.files) - 1,  # can_delete_torrent
-                )
-                episodes.add(episode)
-                self.torrents[episode] = torrent
-
-        return episodes
-
     def select_episode(self):
         inquirer_episode_choice = "episode choice"
-        episodes = set()
-        torrents = self.get_torrents_info()
-        for torrent in torrents:
-            episodes |= self.get_episodes(torrent)
-
         questions = [
             inquirer.List(
                 inquirer_episode_choice,
                 message="What do you want to watch?",
                 choices=sorted(
-                    [episode for episode in episodes],
+                    [episode for episode in self.qbittorrent.get_episodes()],
                     key=lambda ep: (
                         ep.anime_title,
                         ep.season,
@@ -176,27 +146,14 @@ class AniFlow:
             [inquirer.Confirm(inquirer_delete_torrent, message="Delete torrent?")],
             raise_keyboard_interrupt=True,
         ).get(inquirer_delete_torrent)
+        
         if should_delete_torrent:
-            self.delete_torrent()
+            self.qbittorrent.delete(self.episode_choice)
         self.delete_torrent_asked = True
-
-    def delete_torrent(self):
-        if self.episode_choice.can_delete_torrent:
-            self.torrents[self.episode_choice].delete(delete_files=True)
-        else:
-            self.torrents[self.episode_choice].file_priority(
-                file_ids=self.episode_choice.index, priority=0
-            )
-            os.remove(self.episode_choice.path)
 
     def init(self):
         load_dotenv()
-        conn_info = dict(
-            host="localhost",
-            port=8080,
-        )
-        self.qbittorrent = qbittorrentapi.Client(**conn_info)
-
+        self.qbittorrent = Qbittorrent()
         self.reddit = Reddit()
         self.anilist = AniList()
 
