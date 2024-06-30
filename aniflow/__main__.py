@@ -101,7 +101,7 @@ class AniFlow:
 
         self.anilist.get_access_token()
 
-        access_token = prompt.text("Paste the token provided by AniList")
+        access_token = prompt.password("Paste the token provided by AniList")
         self.anilist.set_access_token(access_token)
 
     def update_anilist(self):

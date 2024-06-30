@@ -21,10 +21,5 @@ def list(message, choices):
     return prompt(inquirer.List(KEY, message=message, choices=choices, carousel=True))
 
 
-def text(message):
-    return prompt(
-        inquirer.Text(
-            KEY,
-            message=message,
-        )
-    )
+def password(message):
+    return prompt(inquirer.Password(KEY, message=message, echo=""))
