@@ -48,7 +48,7 @@ class AniFlow:
             os.startfile(self.episode_choice.path)
             self.anilist.find_and_set_data(self.episode_choice)
 
-    def maybe_open_reddit_discussion(self):
+    def open_reddit_discussion(self):
         self.state = State.AUTH_ANILIST
 
         reddit_url = self.reddit.get_discussion_url(self.episode_choice)
@@ -59,7 +59,7 @@ class AniFlow:
         if should_open_reddit_discussion:
             webbrowser.open_new(reddit_url)
 
-    def maybe_auth_anilist(self):
+    def auth_anilist(self):
         self.state = State.UPDATE_ANILIST
 
         if not self.anilist.should_auth():
@@ -70,7 +70,7 @@ class AniFlow:
         access_token = prompt.text("Enter the Auth Pin from AniList")
         self.anilist.set_access_token(access_token)
 
-    def maybe_update_anilist_progress(self):
+    def update_anilist_progress(self):
         self.state = State.OPEN_ANILIST
 
         if not self.episode_choice.anilist_data:
@@ -83,7 +83,7 @@ class AniFlow:
                 self.state = State.AUTH_ANILIST
                 return
 
-    def maybe_open_anilist(self):
+    def open_anilist(self):
         self.state = State.DELETE_FILE
 
         if not self.episode_choice.is_last_episode():
@@ -93,7 +93,7 @@ class AniFlow:
         if should_open_anilist:
             webbrowser.open_new(self.episode_choice.anilist_data.entry_url)
 
-    def maybe_delete_file(self):
+    def delete_file(self):
         self.state = State.SELECT_EPISODE
 
         should_delete_torrent = prompt.confirm("Delete torrent?", default=False)
@@ -115,15 +115,15 @@ class AniFlow:
                         self.reset()
                         self.select_episode()
                     case State.OPEN_REDDIT_DISCUSSION:
-                        self.maybe_open_reddit_discussion()
+                        self.open_reddit_discussion()
                     case State.AUTH_ANILIST:
-                        self.maybe_auth_anilist()
+                        self.auth_anilist()
                     case State.UPDATE_ANILIST:
-                        self.maybe_update_anilist_progress()
+                        self.update_anilist_progress()
                     case State.OPEN_ANILIST:
-                        self.maybe_open_anilist()
+                        self.open_anilist()
                     case State.DELETE_FILE:
-                        self.maybe_delete_file()
+                        self.delete_file()
         except KeyboardInterrupt:
             exit()
 
