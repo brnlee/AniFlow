@@ -4,4 +4,3 @@ inquirer
 requests
 praw
 python-dotenv
-editdistance

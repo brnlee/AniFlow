@@ -1,7 +1,7 @@
 import webbrowser
+from difflib import SequenceMatcher
 from os import getenv
 
-import editdistance
 import requests
 from common import AniListData, Episode, nested_get
 from dotenv import set_key, unset_key
@@ -13,15 +13,26 @@ class AniList:
     KEY_ANILIST_CLIENT_ID = "ANILIST_CLIENT_ID"
     KEY_ANILIST_TOKEN = "ANILIST_TOKEN"
 
-    EDIT_DISTANCE_LEEWAY = 1
-    """ 
-    Number of characters that can be different.
-
-    Currently at 1 to account for "wo" <-> "o"
-    """
+    MIN_TITLE_SIMILARITY_RATIO = 0.95
 
     def __init__(self) -> None:
         self._token = getenv("ANILIST_TOKEN")
+
+    def should_auth(self):
+        return not self._token
+
+    def open_authorization_page(self):
+        client_id = getenv(self.KEY_ANILIST_CLIENT_ID)
+        url = f"https://anilist.co/api/v2/oauth/authorize?client_id={client_id}&response_type=token"
+        webbrowser.open(url)
+
+    def set_access_token(self, token):
+        self._token = token
+        set_key(".env", self.KEY_ANILIST_TOKEN, self._token)
+
+    def clear_access_token(self):
+        self._token = None
+        unset_key(".env", self.KEY_ANILIST_TOKEN)
 
     def clean_string(self, string):
         """Removes all non-alphanumeric characters for string comparison"""
@@ -34,8 +45,9 @@ class AniList:
         clean_title = self.clean_string(episode.anime_title)
         clean_title_to_compare = self.clean_string(title_to_compare)
 
-        if not editdistance.distance_le_than(
-            clean_title, clean_title_to_compare, self.EDIT_DISTANCE_LEEWAY
+        if (
+            SequenceMatcher(None, clean_title, clean_title_to_compare).ratio()
+            < self.MIN_TITLE_SIMILARITY_RATIO
         ):
             return False
 
@@ -56,22 +68,6 @@ class AniList:
                 map(lambda title: self.do_titles_match(episode, title), anime["titles"])
             ) and int(episode.episode_number) <= anime.get("episodes"):
                 return anime
-
-    def should_auth(self):
-        return not self._token
-
-    def open_authorization_page(self):
-        client_id = getenv(self.KEY_ANILIST_CLIENT_ID)
-        url = f"https://anilist.co/api/v2/oauth/authorize?client_id={client_id}&response_type=token"
-        webbrowser.open(url)
-
-    def set_access_token(self, token):
-        self._token = token
-        set_key(".env", self.KEY_ANILIST_TOKEN, self._token)
-
-    def clear_access_token(self):
-        self._token = None
-        unset_key(".env", self.KEY_ANILIST_TOKEN)
 
     def update_entry(self, episode: Episode) -> bool:
         """Returns True if there is an Auth error"""
