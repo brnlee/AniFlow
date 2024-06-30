@@ -34,7 +34,7 @@ Create a ".env" file in the project root directory in the format of "[.env.sampl
 
 ## Usage
 ```console
-python ./aniflow.py
+python aniflow
 ```
 
 ## Platform Support

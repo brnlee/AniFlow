@@ -188,4 +188,5 @@ class AniFlow:
         os.system("cls")
 
 
-AniFlow().start()
+if __name__ == "__main__":
+    AniFlow().start()
