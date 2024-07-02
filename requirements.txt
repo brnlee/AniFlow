@@ -1,4 +1,4 @@
-qbittorrentapi
+qbittorrent-api
 anitopy
 inquirer
 requests
