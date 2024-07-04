@@ -1,3 +1,4 @@
+import string
 import webbrowser
 from difflib import SequenceMatcher
 from os import getenv
@@ -12,8 +13,8 @@ class AniList:
     GRAPHQL_URL = "https://graphql.anilist.co"
     KEY_ANILIST_CLIENT_ID = "ANILIST_CLIENT_ID"
     KEY_ANILIST_TOKEN = "ANILIST_TOKEN"
-
-    MIN_TITLE_SIMILARITY_RATIO = 0.95
+    MIN_TITLE_SIMILARITY_RATIO = 0.9
+    ACCEPTABLE_CHARS = set(string.printable)
 
     def __init__(self) -> None:
         self._token = getenv("ANILIST_TOKEN")
@@ -33,31 +34,6 @@ class AniList:
     def clear_access_token(self):
         self._token = None
         unset_key(find_dotenv(), self.KEY_ANILIST_TOKEN)
-
-    def clean_string(self, string):
-        """Removes all non-alphanumeric characters for string comparison"""
-        return "".join(char for char in string if char.isalnum()).lower()
-
-    def _titles_match(self, sequence_matcher, titles):
-        for title in titles:
-            sequence_matcher.set_seq1(title.lower())
-            if sequence_matcher.ratio() >= self.MIN_TITLE_SIMILARITY_RATIO:
-                return True
-        return False
-
-    def match_anime(self, episode: Episode, results):
-        sequence_matcher = SequenceMatcher(
-            isjunk=lambda c: not c.isalnum(),
-            a=None,
-            b=episode.fmt_str(include_episode_number=False).lower(),
-        )
-        for anime in results:
-            titles = [*anime.get("title").values()]
-            titles.extend(sorted(anime.get("synonyms", [])))
-            titles = filter(None, titles)
-            if self._titles_match(sequence_matcher, titles):
-                anime["titles"] = titles
-                return anime
 
     def update_entry(self, episode: Episode) -> bool:
         """Returns True if there is an Auth error"""
@@ -128,8 +104,35 @@ class AniList:
 
         results = nested_get(response.json(), ["data", "anime", "results"])
 
-        anime = self.match_anime(episode, results)
+        anime = self._match_anime(episode, results)
         if not anime:
             print("Failed to find anime on AniList")
             return
         episode.set_anilist_data(anime)
+
+    def _has_only_valid_chars(self, string):
+        return len(set(string) - self.ACCEPTABLE_CHARS) == 0
+
+    def _get_titles(self, anime):
+        titles = list(anime.get("title").values()) + anime.get("synonyms", [])
+        return [title for title in titles if self._has_only_valid_chars(title)]
+
+    def _titles_match(self, sequence_matcher, titles):
+        for title in titles:
+            sequence_matcher.set_seq1(title.lower())
+            if sequence_matcher.ratio() >= self.MIN_TITLE_SIMILARITY_RATIO:
+                return True
+        return False
+
+    def _match_anime(self, episode: Episode, results):
+        title = episode.fmt_str(include_episode_number=False)
+        sequence_matcher = SequenceMatcher(
+            isjunk=lambda c: not c.isalnum(),
+            a=None,
+            b=title.lower(),
+        )
+        for anime in results:
+            titles = self._get_titles(anime)
+            if self._titles_match(sequence_matcher, titles):
+                anime["titles"] = titles
+                return anime
