@@ -64,10 +64,10 @@ class AniFlow:
         if choice is reload_episodes_choice:
             return
         else:
-            self.state = State.OPEN_REDDIT_DISCUSSION
+            os.startfile(choice.path)
+            self.anilist.find_and_set_data(choice)
             self.episode_choice = choice
-            os.startfile(self.episode_choice.path)
-            self.anilist.find_and_set_data(self.episode_choice)
+            self.state = State.OPEN_REDDIT_DISCUSSION
 
     def open_reddit_discussion(self):
         self.state = State.AUTH_ANILIST

@@ -38,33 +38,24 @@ class AniList:
         """Removes all non-alphanumeric characters for string comparison"""
         return "".join(char for char in string if char.isalnum()).lower()
 
-    def _titles_match(self, sequence_matcher, titles, season):
+    def _titles_match(self, sequence_matcher, titles):
         for title in titles:
-            if not title:
-                continue
-            clean_title = self.clean_string(title)
-
-            sequence_matcher.set_seq1(clean_title)
-            if sequence_matcher.ratio() < self.MIN_TITLE_SIMILARITY_RATIO:
-                continue
-
-            if (
-                not season
-                or clean_title.endswith(season)
-                or self.clean_string(f"Season {season}") in clean_title
-                or self.clean_string(f"S{season}") in clean_title
-            ):
+            sequence_matcher.set_seq1(title.lower())
+            if sequence_matcher.ratio() >= self.MIN_TITLE_SIMILARITY_RATIO:
                 return True
         return False
 
     def match_anime(self, episode: Episode, results):
         sequence_matcher = SequenceMatcher(
-            None, a=None, b=self.clean_string(episode.anime_title)
+            isjunk=lambda c: not c.isalnum(),
+            a=None,
+            b=episode.fmt_str(include_episode_number=False).lower(),
         )
         for anime in results:
-            titles = [title for title in anime.get("title").values() if title]
+            titles = [*anime.get("title").values()]
             titles.extend(sorted(anime.get("synonyms", [])))
-            if self._titles_match(sequence_matcher, titles, episode.season):
+            titles = filter(None, titles)
+            if self._titles_match(sequence_matcher, titles):
                 anime["titles"] = titles
                 return anime
 
