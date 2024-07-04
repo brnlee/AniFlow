@@ -111,13 +111,13 @@ class AniList:
             return
         episode.set_anilist_data(anime)
 
-    def _has_only_valid_chars(self, s) -> bool:
-        """Returns True if all characters in the str argument is acceptable"""
-        return s and len(set(s) - self.ACCEPTABLE_CHARS) == 0
+    def _is_valid_title(self, title) -> bool:
+        """Returns True if all characters in the title argument are acceptable"""
+        return title and all((c in self.ACCEPTABLE_CHARS for c in title))
 
     def _get_titles(self, anime) -> List[str]:
         titles = list(anime.get("title").values()) + anime.get("synonyms", [])
-        return [title for title in titles if self._has_only_valid_chars(title)]
+        return list(filter(self._is_valid_title, titles))
 
     def _titles_match(self, sequence_matcher, titles) -> bool:
         for title in titles:
