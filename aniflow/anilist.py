@@ -1,4 +1,5 @@
 import string
+from typing import List
 import webbrowser
 from difflib import SequenceMatcher
 from os import getenv
@@ -19,7 +20,7 @@ class AniList:
     def __init__(self) -> None:
         self._token = getenv("ANILIST_TOKEN")
 
-    def should_auth(self):
+    def should_auth(self) -> bool:
         return not self._token
 
     def open_authorization_page(self):
@@ -110,21 +111,22 @@ class AniList:
             return
         episode.set_anilist_data(anime)
 
-    def _has_only_valid_chars(self, string):
-        return len(set(string) - self.ACCEPTABLE_CHARS) == 0
+    def _has_only_valid_chars(self, s) -> bool:
+        """Returns True if all characters in the str argument is acceptable"""
+        return s and len(set(s) - self.ACCEPTABLE_CHARS) == 0
 
-    def _get_titles(self, anime):
+    def _get_titles(self, anime) -> List[str]:
         titles = list(anime.get("title").values()) + anime.get("synonyms", [])
         return [title for title in titles if self._has_only_valid_chars(title)]
 
-    def _titles_match(self, sequence_matcher, titles):
+    def _titles_match(self, sequence_matcher, titles) -> bool:
         for title in titles:
             sequence_matcher.set_seq1(title.lower())
             if sequence_matcher.ratio() >= self.MIN_TITLE_SIMILARITY_RATIO:
                 return True
         return False
 
-    def _match_anime(self, episode: Episode, results):
+    def _match_anime(self, episode: Episode, results) -> dict:
         title = episode.fmt_str(include_episode_number=False)
         sequence_matcher = SequenceMatcher(
             isjunk=lambda c: not c.isalnum(),
