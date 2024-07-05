@@ -20,7 +20,11 @@ class Episode:
         self.torrent_hash = torrent_hash
         self.can_delete_torrent = can_delete_torrent
 
-        anitopy_options = {"parse_file_extension": False, "parse_release_group": False}
+        anitopy_options = {
+            "parse_file_extension": False,
+            "parse_release_group": False,
+            "allowed_delimiters": " _&+,|",
+        }
         details = anitopy.parse(self._get_file_name(), options=anitopy_options)
         self.anime_title = details.get("anime_title")
 
