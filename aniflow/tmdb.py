@@ -3,7 +3,7 @@ from collections import defaultdict
 from os import getenv
 
 import tmdbsimple as tmdb
-from common import Episode
+from common import Episode, get_root_dir
 
 
 class TMDB:
@@ -12,7 +12,7 @@ class TMDB:
     tmdb_to_anilist = defaultdict(list)
 
     def __init__(self) -> None:
-        with open("anime-list-full.json", "r") as f:
+        with open(get_root_dir() / "anime-list-full.json", "r") as f:
             for entry in json.load(f):
                 anilist_id = entry.get("anilist_id")
                 tmdb_id = entry.get("themoviedb_id")

@@ -1,4 +1,5 @@
 from enum import Enum
+from pathlib import Path
 
 import anitopy
 from roman import toRoman
@@ -112,3 +113,7 @@ def nested_get(dic, keys):
             return None
         dic = dic.get(key)
     return dic
+
+
+def get_root_dir():
+    return Path(__file__).parent.parent
