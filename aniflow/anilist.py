@@ -86,8 +86,8 @@ class AniList:
                 results: media(type: ANIME, search: $search) {
                     id
                     title {
-                        english
                         romaji
+                        english
                     }
                     synonyms
                     episodes
@@ -183,8 +183,8 @@ class AniList:
             Media(type: ANIME, id: $id) {
                 id
                 title {
-                    english
                     romaji
+                    english
                 }
                 synonyms
                 episodes
