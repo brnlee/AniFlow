@@ -1,5 +1,6 @@
-from datetime import date, datetime
+from datetime import datetime
 from os import getenv
+from os.path import getmtime
 from pathlib import Path
 from urllib.request import urlretrieve
 
@@ -20,8 +21,12 @@ def get_last_commit_date(repo: str, path: str):
 
 
 def update_file_if_necessary(repo: str, path: str, local_file_path: Path):
-    if get_last_commit_date(repo, path).date() > date.today():
-        urlretrieve(
-            url=f"https://raw.githubusercontent.com/{repo}/master/{path}",
-            filename=local_file_path,
-        )
+    if local_file_path.exists():
+        remote_last_updated = get_last_commit_date(repo, path)
+        local_last_updated = datetime.fromtimestamp(getmtime(local_file_path))
+        if local_last_updated > remote_last_updated:
+            return
+    urlretrieve(
+        url=f"https://raw.githubusercontent.com/{repo}/master/{path}",
+        filename=local_file_path,
+    )
