@@ -80,15 +80,6 @@ class Episode:
         return delimiter.join(self.fmt_str_tokens(**kwargs))
 
 
-class AniListData:
-
-    def __init__(self, anime) -> None:
-        self.id = anime.get("id")
-        self.titles = anime.get("titles")
-        self.episode_count = anime.get("episodes")
-        self.entry_url = anime.get("siteUrl")
-
-
 class AniListEntry:
 
     prequel = None

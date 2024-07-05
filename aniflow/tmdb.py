@@ -2,6 +2,7 @@ import json
 from collections import defaultdict
 from os import getenv
 
+import github
 import tmdbsimple as tmdb
 from common import Episode, get_root_dir
 
@@ -12,7 +13,13 @@ class TMDB:
     tmdb_to_anilist = defaultdict(list)
 
     def __init__(self) -> None:
-        with open(get_root_dir() / "anime-list-full.json", "r") as f:
+        self._db_path = get_root_dir() / "anime-list-full.json"
+        github.update_file_if_necessary(
+            repo="Fribb/anime-lists",
+            path="anime-list-full.json",
+            local_file_path=self._db_path,
+        )
+        with open(self._db_path, "r") as f:
             for entry in json.load(f):
                 anilist_id = entry.get("anilist_id")
                 tmdb_id = entry.get("themoviedb_id")
