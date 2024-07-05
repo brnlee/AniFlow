@@ -117,24 +117,24 @@ class AniList:
 
         anime = self._match_anime(episode, results)
         if not anime:
-            print("Failed to find anime on AniList")
+            print("Failed to confidently find anime on AniList")
             entry_ids, absolute_episode_number = self.tmdb.search(episode)
+            if not entry_ids:
+                print("Could not find anime on TMDB")
+                return
             graph = {}
             head_node_id = self._build_graph(entry_ids, graph)
-            entry_id, relative_episode_number = (
-                self._find_correct_entry_based_on_abs_ep_number(
-                    absolute_episode_number, graph, head_node_id
-                )
+            entry_id, relative_episode_number = self._find_entry_based_on_abs_ep_number(
+                absolute_episode_number, graph, head_node_id
             )
             if absolute_episode_number != relative_episode_number:
                 episode.absolute_episode_number = str(absolute_episode_number)
                 episode.episode_number = str(relative_episode_number)
-            anilist_entry = graph.get(entry_id)
-            # anime = self._match_anime_2(episode, tmdb_title, results)
-            if not anilist_entry:
-                print("Could not find any AniList entry after fallback to TMDB")
+            episode.anilist_entry = graph.get(entry_id)
+            if episode.anilist_entry:
+                print("Found AniList entry after falling back to TMDB")
             else:
-                episode.anilist_entry = anilist_entry
+                print("Could not find any AniList entry falling back to TMDB")
             return
 
         episode.anilist_entry = AniListEntry(anime)
@@ -149,17 +149,20 @@ class AniList:
 
     def _titles_match(self, sequence_matcher, titles) -> bool:
         for title in titles:
-            sequence_matcher.set_seq1(title.lower())
+            sequence_matcher.set_seq1(self._prepare_string_for_comparison(title))
             if sequence_matcher.ratio() >= self.MIN_TITLE_SIMILARITY_RATIO:
                 return True
         return False
 
+    def _prepare_string_for_comparison(self, string):
+        return "".join(filter(str.isalnum, string.lower()))
+
     def _match_anime(self, episode: Episode, results) -> dict:
         title = episode.fmt_str(include_episode_number=False, delimiter=" ")
         sequence_matcher = SequenceMatcher(
-            isjunk=lambda c: not c.isalnum(),
+            isjunk=None,
             a=None,
-            b=title.lower(),
+            b=self._prepare_string_for_comparison(title),
         )
         for anime in results:
             titles = self._get_titles(anime)
@@ -243,7 +246,7 @@ class AniList:
                 head_node_id = id
         return head_node_id
 
-    def _find_correct_entry_based_on_abs_ep_number(
+    def _find_entry_based_on_abs_ep_number(
         self, absolute_episode_number, graph: dict[int, AniListEntry], head_id
     ):
         id = head_id

@@ -36,17 +36,17 @@ class TMDB:
     def get_anilist_entries(self, tmdb_id: int):
         return self.tmdb_to_anilist[tmdb_id]
 
-    def _get_seasons(self, anilist_id=None, tmdb_id=None):
-        if not anilist_id and not tmdb_id:
-            print("Missing IDs")
-            return None
-        elif not tmdb_id:
-            tmdb_id = self.get_tmdb_id(anilist_id)
+    def _get_seasons(self, tmdb_id):
+        if not tmdb_id:
+            print("Missing ID")
+            return []
+
         entry = tmdb.TV(tmdb_id)
+
         seasons = []
         cumulative_episode_count = 0
-        entry.info()
-        for season in entry.seasons:
+
+        for season in entry.info().get("seasons"):
             name = season.get("name")
             episode_count = season.get("episode_count")
             if name == "Specials" or not episode_count:
@@ -71,7 +71,7 @@ class TMDB:
         search_results = tmdb.Search().tv(query=episode.anime_title).get("results")
         for result in search_results:
             id = result.get("id")
-            seasons = self._get_seasons(tmdb_id=id)
+            seasons = self._get_seasons(id)
             ep_number = int(episode.episode_number)
             for season_num, ep_count, abs_ep_range in seasons:
                 start, end = abs_ep_range
@@ -80,3 +80,4 @@ class TMDB:
                         return self.get_anilist_entries(id), start + ep_number - 1
                 if ep_number <= end:
                     return self.get_anilist_entries(id), ep_number
+        return None, None
