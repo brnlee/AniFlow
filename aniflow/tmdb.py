@@ -9,7 +9,6 @@ from common import Episode, get_root_dir
 
 class TMDB:
 
-    anilist_to_tmdb = {}
     tmdb_to_anilist = defaultdict(list)
     types = {"TV", "SPECIALS"}
 
@@ -26,15 +25,23 @@ class TMDB:
                 tmdb_id = entry.get("themoviedb_id")
                 type = entry.get("type")
                 if anilist_id and tmdb_id and type in self.types:
-                    self.anilist_to_tmdb[anilist_id] = tmdb_id
                     self.tmdb_to_anilist[tmdb_id].append(anilist_id)
         tmdb.API_KEY = getenv("TMDB_API_KEY")
 
-    def get_tmdb_id(self, anilist_id: str):
-        return self.anilist_to_tmdb[anilist_id]
-
-    def get_anilist_entries(self, tmdb_id: int):
-        return self.tmdb_to_anilist[tmdb_id]
+    def search(self, episode: Episode):
+        search_results = tmdb.Search().tv(query=episode.anime_title).get("results")
+        for result in search_results:
+            id = result.get("id")
+            seasons = self._get_seasons(id)
+            ep_number = int(episode.episode_number)
+            for season_num, ep_count, abs_ep_range in seasons:
+                start, end = abs_ep_range
+                if episode.season and episode.season == season_num:
+                    if ep_number <= ep_count:
+                        return self._get_anilist_entries(id), start + ep_number - 1
+                if ep_number <= end:
+                    return self._get_anilist_entries(id), ep_number
+        return None, None
 
     def _get_seasons(self, tmdb_id):
         if not tmdb_id:
@@ -64,20 +71,7 @@ class TMDB:
                     ep_range,
                 )
             )
-
         return seasons
 
-    def search(self, episode: Episode):
-        search_results = tmdb.Search().tv(query=episode.anime_title).get("results")
-        for result in search_results:
-            id = result.get("id")
-            seasons = self._get_seasons(id)
-            ep_number = int(episode.episode_number)
-            for season_num, ep_count, abs_ep_range in seasons:
-                start, end = abs_ep_range
-                if episode.season and episode.season == season_num:
-                    if ep_number <= ep_count:
-                        return self.get_anilist_entries(id), start + ep_number - 1
-                if ep_number <= end:
-                    return self.get_anilist_entries(id), ep_number
-        return None, None
+    def _get_anilist_entries(self, tmdb_id: int):
+        return self.tmdb_to_anilist[tmdb_id]

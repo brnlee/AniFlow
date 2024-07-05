@@ -1,15 +1,7 @@
-from enum import Enum
 from pathlib import Path
 
 import anitopy
 from roman import toRoman
-
-
-class SeasonFormat(Enum):
-    SEASON = "Season"
-    S = "S"
-    NUMBER_ONLY = "NUMBER_ONLY"
-    ROMAN_NUMERALS = "ROMAN_NUMERALS"
 
 
 class Episode:
@@ -58,7 +50,6 @@ class Episode:
         include_title=True,
         include_season=True,
         include_episode_number=True,
-        season_format=SeasonFormat.SEASON,
     ):
         tokens = []
 
@@ -66,14 +57,7 @@ class Episode:
             tokens.append(self.anime_title)
 
         if include_season and self.season:
-            season = int(self.season)
-            match season_format:
-                case SeasonFormat.SEASON | SeasonFormat.S:
-                    tokens.append(f"{season_format.value} {season}")
-                case SeasonFormat.NUMBER_ONLY:
-                    tokens.append(f"{season}")
-                case SeasonFormat.ROMAN_NUMERALS:
-                    tokens.append(f"{toRoman(season)}")
+            tokens.append(f"Season {int(self.season)}")
 
         if include_episode_number and self.episode_number:
             tokens.append(f"Episode {self.episode_number}")
