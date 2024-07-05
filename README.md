@@ -16,7 +16,7 @@ pip install -r requirements.txt
 ```
 
 ### qBittorrent
-Enable the built-in web server:
+Enable the built-in web server to allow querying for torrents.
 1. Go to "Options"
 2. Press "Web UI"
 3. Enable "Web User Interface (Remote Control)"
@@ -24,10 +24,17 @@ Enable the built-in web server:
 5. Set "Username" and "Password"
 
 ### Reddit
-Create an application on [Reddit](https://reddit.com/prefs/apps/).
+Create an application on [Reddit](https://reddit.com/prefs/apps/) to search for discussion threads on [r/anime](https://reddit.com/r/anime/).
 
 ### AniList
-Create a client on [AniList](https://anilist.co/settings/developer).
+Create a client on [AniList](https://anilist.co/settings/developer) for primary anime lookup based on filename.
+
+### TMDB
+Get an API key for [TMDB](https://developer.themoviedb.org/docs/getting-started) for secondary anime lookup based on filename.
+
+### GitHub
+Create a personal access token for [GitHub](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token). 
+The token only needs read-only repository access. The token will be used to query for updates to the offline database used to convert TMDB entries to AniList entries.
 
 ### .env
 Create a ".env" file in the project root directory with the format of "[.env.sample](.env.sample)" and add the secrets for each service.
