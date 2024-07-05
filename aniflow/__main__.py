@@ -102,7 +102,9 @@ class AniFlow:
         if not self.episode_choice.anilist_entry:
             return
 
-        update_anilist = prompt.confirm("Update AniList?")
+        update_anilist = prompt.confirm(
+            f'Update progress on AniList for "{self.episode_choice.anilist_entry.titles[0]}"?'
+        )
         if update_anilist:
             encountered_auth_error = self.anilist.update_entry(self.episode_choice)
             if encountered_auth_error:
