@@ -4,3 +4,5 @@ inquirer
 requests
 praw
 python-dotenv
+tmdbsimple
+roman

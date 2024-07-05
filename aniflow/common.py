@@ -1,4 +1,14 @@
+from enum import Enum
+
 import anitopy
+from roman import toRoman
+
+
+class SeasonFormat(Enum):
+    SEASON = "Season"
+    S = "S"
+    NUMBER_ONLY = "NUMBER_ONLY"
+    ROMAN_NUMERALS = "ROMAN_NUMERALS"
 
 
 class Episode:
@@ -19,19 +29,17 @@ class Episode:
         )
         if self.episode_number:
             self.episode_number = f"{self.episode_number:g}"
-        self.season = details.get("anime_season")
-        self.anilist_data: AniListData = None
+        self.absolute_episode_number = None
+        self.season = int(details.get("anime_season", 0))
+        self.anilist_entry: AniListEntry = None
 
     def is_last_episode(self):
-        if not self.anilist_data:
+        if not self.anilist_entry:
             return False
         elif not self.episode_number:
             return True
 
-        return int(self.episode_number) is int(self.anilist_data.episode_count)
-
-    def set_anilist_data(self, anime):
-        self.anilist_data = AniListData(anime)
+        return int(self.episode_number) is int(self.anilist_entry.episode_count)
 
     def _get_file_name(self):
         """Returns the file name after removing any directory paths"""
@@ -41,7 +49,11 @@ class Episode:
         return self.fmt_str()
 
     def fmt_str_tokens(
-        self, include_title=True, include_season=True, include_episode_number=True
+        self,
+        include_title=True,
+        include_season=True,
+        include_episode_number=True,
+        season_format=SeasonFormat.SEASON,
     ):
         tokens = []
 
@@ -49,17 +61,21 @@ class Episode:
             tokens.append(self.anime_title)
 
         if include_season and self.season:
-            try:
-                tokens.append(f"Season {int(self.season)}")
-            except ValueError:
-                pass
+            season = int(self.season)
+            match season_format:
+                case SeasonFormat.SEASON | SeasonFormat.S:
+                    tokens.append(f"{season_format.value} {season}")
+                case SeasonFormat.NUMBER_ONLY:
+                    tokens.append(f"{season}")
+                case SeasonFormat.ROMAN_NUMERALS:
+                    tokens.append(f"{toRoman(season)}")
 
         if include_episode_number and self.episode_number:
             tokens.append(f"Episode {self.episode_number}")
 
         return tokens
 
-    def fmt_str(self, delimiter=" - ", **kwargs):
+    def fmt_str(self, delimiter=" • ", **kwargs):
         return delimiter.join(self.fmt_str_tokens(**kwargs))
 
 
@@ -70,6 +86,24 @@ class AniListData:
         self.titles = anime.get("titles")
         self.episode_count = anime.get("episodes")
         self.entry_url = anime.get("siteUrl")
+
+
+class AniListEntry:
+
+    prequel = None
+    sequel = None
+
+    def __init__(self, anime: dict) -> None:
+        self.id = anime.get("id")
+        self.titles = anime.get("titles")
+        self.url = anime.get("siteUrl")
+        self.episode_count = anime.get("episodes")
+
+    def __str__(self) -> str:
+        return f"{self.id} {self.titles} {self.url} prequel={self.prequel} sequel={self.sequel}"
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 def nested_get(dic, keys):

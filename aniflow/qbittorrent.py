@@ -45,10 +45,10 @@ class Qbittorrent:
     def _get_episodes_per_torrent(self, torrent):
         episodes = []
         for index, file in enumerate(torrent.files):
-            if file.get("progress") == self.PROGRESS_COMPLETE and file.priority == 1:
+            if file.get("progress") <= self.PROGRESS_COMPLETE and file.priority == 1:
                 path = Path(torrent.save_path) / file.name
-                if not path.exists() or not self._is_video_file(path):
-                    continue
+                # if not path.exists() or not self._is_video_file(path):
+                #     continue
                 episode = Episode(
                     file.index,
                     file.name,

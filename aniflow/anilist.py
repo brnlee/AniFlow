@@ -1,11 +1,12 @@
 import string
-from typing import List
 import webbrowser
 from difflib import SequenceMatcher
 from os import getenv
+from typing import List
 
 import requests
-from common import Episode, nested_get
+import tmdb
+from common import AniListEntry, Episode, nested_get
 from dotenv import find_dotenv, set_key, unset_key
 
 
@@ -19,6 +20,7 @@ class AniList:
 
     def __init__(self) -> None:
         self._token = getenv("ANILIST_TOKEN")
+        self.tmdb = tmdb.TMDB()
 
     def should_auth(self) -> bool:
         return not self._token
@@ -48,7 +50,7 @@ class AniList:
         """
         status = "COMPLETED" if episode.is_last_episode() else "CURRENT"
         variables = {
-            "mediaId": episode.anilist_data.id,
+            "mediaId": episode.anilist_entry.id,
             "status": status,
             "progress": int(episode.episode_number),
         }
@@ -80,18 +82,26 @@ class AniList:
     def find_and_set_data(self, episode: Episode):
         query = """
         query ($search: String) {
-        anime: Page(perPage: 2) {
-            results: media(type: ANIME, search: $search) {
-            id
-            title {
-                english
-                romaji
+            anime: Page(perPage: 2) {
+                results: media(type: ANIME, search: $search) {
+                    id
+                    title {
+                        english
+                        romaji
+                    }
+                    synonyms
+                    episodes
+                    siteUrl
+                    relations {
+                        edges {
+                            relationType
+                        }
+                        nodes {
+                            id
+                        }
+                    }
+                }
             }
-            synonyms
-            episodes
-            siteUrl
-            }
-        }
         }
         """
         search_title = episode.fmt_str(delimiter=" ", include_episode_number=False)
@@ -108,8 +118,26 @@ class AniList:
         anime = self._match_anime(episode, results)
         if not anime:
             print("Failed to find anime on AniList")
+            entry_ids, absolute_episode_number = self.tmdb.search(episode)
+            graph = {}
+            head_node_id = self._build_graph(entry_ids, graph)
+            entry_id, relative_episode_number = (
+                self._find_correct_entry_based_on_abs_ep_number(
+                    absolute_episode_number, graph, head_node_id
+                )
+            )
+            if absolute_episode_number != relative_episode_number:
+                episode.absolute_episode_number = str(absolute_episode_number)
+                episode.episode_number = str(relative_episode_number)
+            anilist_entry = graph.get(entry_id)
+            # anime = self._match_anime_2(episode, tmdb_title, results)
+            if not anilist_entry:
+                print("Could not find any AniList entry after fallback to TMDB")
+            else:
+                episode.anilist_entry = anilist_entry
             return
-        episode.set_anilist_data(anime)
+
+        episode.anilist_entry = AniListEntry(anime)
 
     def _is_valid_title(self, title) -> bool:
         """Returns True if all characters in the title argument are acceptable"""
@@ -127,7 +155,7 @@ class AniList:
         return False
 
     def _match_anime(self, episode: Episode, results) -> dict:
-        title = episode.fmt_str(include_episode_number=False)
+        title = episode.fmt_str(include_episode_number=False, delimiter=" ")
         sequence_matcher = SequenceMatcher(
             isjunk=lambda c: not c.isalnum(),
             a=None,
@@ -136,5 +164,98 @@ class AniList:
         for anime in results:
             titles = self._get_titles(anime)
             if self._titles_match(sequence_matcher, titles):
+                episode_count = anime.get("episodes")
+                if (
+                    episode.episode_number
+                    and episode_count
+                    and int(episode.episode_number) > episode_count
+                ):
+                    continue
                 anime["titles"] = titles
                 return anime
+
+    def _build_graph(self, ids: List[int], graph):
+        query = """
+        query ($id: Int) {
+            Media(type: ANIME, id: $id) {
+                id
+                title {
+                    english
+                    romaji
+                }
+                synonyms
+                episodes
+                siteUrl
+                relations {
+                    edges {
+                        relationType
+                    }
+                    nodes {
+                        id
+                    }
+                }
+            }
+        }
+        """
+        head_node_id = None
+        for id in ids:
+            if id in graph:
+                continue
+
+            variables = {"id": id}
+            response = requests.post(
+                self.GRAPHQL_URL, json={"query": query, "variables": variables}
+            )
+            if response.status_code != 200:
+                print("ERROR")
+                continue
+
+            anime = nested_get(response.json(), ["data", "Media"])
+            anime["titles"] = self._get_titles(anime)
+            edges = nested_get(anime, ["relations", "edges"])
+            nodes = nested_get(anime, ["relations", "nodes"])
+            if not edges and not nodes:
+                continue
+
+            curr_node = AniListEntry(anime)
+            graph[id] = curr_node
+
+            for edge, node in zip(edges, nodes):
+                relation_type = edge.get("relationType")
+                if relation_type not in {"PREQUEL", "SEQUEL"}:
+                    continue
+
+                related_node_id = node.get("id")
+                if related_node_id not in ids:
+                    continue
+
+                head_node_id = head_node_id or self._build_graph(ids, graph)
+                related_node = graph[related_node_id]
+                match relation_type:
+                    case "PREQUEL":
+                        curr_node.prequel = related_node_id
+                        related_node.sequel = id
+                    case "SEQUEL":
+                        curr_node.sequel = related_node.id
+                        related_node.prequel = id
+
+            if not curr_node.prequel:
+                head_node_id = id
+        return head_node_id
+
+    def _find_correct_entry_based_on_abs_ep_number(
+        self, absolute_episode_number, graph: dict[int, AniListEntry], head_id
+    ):
+        id = head_id
+        cumulative_episode_count = 0
+        while id:
+            node = graph[id]
+            start = cumulative_episode_count + 1
+            end = start + node.episode_count - 1
+            if start <= absolute_episode_number <= end:
+                relative_episode_number = (
+                    absolute_episode_number - cumulative_episode_count
+                )
+                return id, relative_episode_number
+            id = node.sequel
+            cumulative_episode_count += node.episode_count

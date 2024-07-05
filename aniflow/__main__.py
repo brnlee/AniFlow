@@ -39,14 +39,14 @@ class AniFlow:
                         self.select_episode()
                     case State.OPEN_REDDIT_DISCUSSION:
                         self.open_reddit_discussion()
-                    case State.AUTH_ANILIST:
-                        self.auth_anilist()
-                    case State.UPDATE_ANILIST:
-                        self.update_anilist()
-                    case State.OPEN_ANILIST:
-                        self.open_anilist()
-                    case State.DELETE_EPISODE:
-                        self.delete_episode()
+                    # case State.AUTH_ANILIST:
+                    #     self.auth_anilist()
+                    # case State.UPDATE_ANILIST:
+                    #     self.update_anilist()
+                    # case State.OPEN_ANILIST:
+                    #     self.open_anilist()
+                    # case State.DELETE_EPISODE:
+                    #     self.delete_episode()
                     case _:
                         self.state = State.SELECT_EPISODE
         except KeyboardInterrupt:
@@ -64,7 +64,7 @@ class AniFlow:
         if choice is reload_episodes_choice:
             return
         else:
-            os.startfile(choice.path)
+            # os.startfile(choice.path)
             self.anilist.find_and_set_data(choice)
             self.episode_choice = choice
             self.state = State.OPEN_REDDIT_DISCUSSION
@@ -74,7 +74,9 @@ class AniFlow:
 
         reddit_url = self.reddit.get_discussion_url(self.episode_choice)
 
-        open_reddit_discussion = prompt.confirm("Open r/anime discussion thread?")
+        open_reddit_discussion = prompt.confirm(
+            "Open r/anime discussion thread?", default=False
+        )
         if open_reddit_discussion:
             webbrowser.open_new(reddit_url)
 
@@ -99,7 +101,7 @@ class AniFlow:
     def update_anilist(self):
         self.state = State.OPEN_ANILIST
 
-        if not self.episode_choice.anilist_data:
+        if not self.episode_choice.anilist_entry:
             return
 
         update_anilist = prompt.confirm("Update AniList?")
@@ -116,7 +118,7 @@ class AniFlow:
 
         open_anilist = prompt.confirm("Open AniList page for the anime?")
         if open_anilist:
-            webbrowser.open_new(self.episode_choice.anilist_data.entry_url)
+            webbrowser.open_new(self.episode_choice.anilist_entry.url)
 
     def delete_episode(self):
         self.state = State.SELECT_EPISODE

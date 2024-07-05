@@ -3,7 +3,6 @@ from os import getenv
 
 import praw
 import requests
-
 from common import Episode
 
 
@@ -68,12 +67,18 @@ class Reddit:
         return response.json().get("access_token")
 
     def _create_reddit_search_query(self, episode: Episode):
-        if not episode.anilist_data:
+        if not episode.anilist_entry:
             return None
         title_terms = " OR ".join(
-            [f'"{title}"' for title in episode.anilist_data.titles]
+            [f'"{title}"' for title in episode.anilist_entry.titles]
         )
         query = f"flair:episode ({title_terms})"
-        if episode.episode_number:
-            query += f' AND "Episode {episode.episode_number}"'
+
+        episode_numbers = filter(
+            None, [episode.episode_number, episode.absolute_episode_number]
+        )
+        episode_terms = " OR ".join([f'"Episode {n}"' for n in episode_numbers])
+        if episode_terms:
+            query += f" AND ({episode_terms})"
+
         return query
