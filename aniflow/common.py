@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import anitopy
-from roman import toRoman
 
 
 class Episode:
