@@ -11,6 +11,7 @@ class TMDB:
 
     anilist_to_tmdb = {}
     tmdb_to_anilist = defaultdict(list)
+    types = {"TV", "SPECIALS"}
 
     def __init__(self) -> None:
         self._db_path = get_root_dir() / "anime-list-full.json"
@@ -23,7 +24,8 @@ class TMDB:
             for entry in json.load(f):
                 anilist_id = entry.get("anilist_id")
                 tmdb_id = entry.get("themoviedb_id")
-                if anilist_id and tmdb_id:
+                type = entry.get("type")
+                if anilist_id and tmdb_id and type in self.types:
                     self.anilist_to_tmdb[anilist_id] = tmdb_id
                     self.tmdb_to_anilist[tmdb_id].append(anilist_id)
         tmdb.API_KEY = getenv("TMDB_API_KEY")
