@@ -30,7 +30,7 @@ class Episode:
         self.anilist_entry: AniListEntry = None
 
     def is_last_episode(self):
-        if not self.anilist_entry:
+        if not self.anilist_entry or not self.anilist_entry.episode_count:
             return False
         elif not self.episode_number:
             return True
