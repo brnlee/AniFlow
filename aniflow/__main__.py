@@ -1,6 +1,6 @@
 import os
 import webbrowser
-from enum import Enum
+from enum import Enum, auto
 
 import prompt
 from anilist import AniList
@@ -11,12 +11,14 @@ from reddit import Reddit
 
 
 class State(Enum):
-    SELECT_EPISODE = 1
-    OPEN_REDDIT_DISCUSSION = 2
-    AUTH_ANILIST = 3
-    UPDATE_ANILIST = 4
-    OPEN_ANILIST = 5
-    DELETE_EPISODE = 6
+    SELECT_EPISODE = auto()
+    PLAY_VIDEO = auto()
+    GET_AND_SET_EPISODE_METADATA = auto()
+    OPEN_REDDIT_DISCUSSION = auto()
+    AUTH_ANILIST = auto()
+    UPDATE_ANILIST = auto()
+    OPEN_ANILIST = auto()
+    DELETE_EPISODE = auto()
 
 
 class AniFlow:
@@ -37,6 +39,10 @@ class AniFlow:
                     case State.SELECT_EPISODE:
                         self.reset()
                         self.select_episode()
+                    case State.PLAY_VIDEO:
+                        self.play_video()
+                    case State.GET_AND_SET_EPISODE_METADATA:
+                        self.get_and_set_episode_metadata()
                     case State.OPEN_REDDIT_DISCUSSION:
                         self.open_reddit_discussion()
                     case State.AUTH_ANILIST:
@@ -64,10 +70,18 @@ class AniFlow:
         if choice is reload_episodes_choice:
             return
         else:
-            os.startfile(choice.path)
-            self.anilist.find_and_set_data(choice)
             self.episode_choice = choice
-            self.state = State.OPEN_REDDIT_DISCUSSION
+            self.state = State.PLAY_VIDEO
+
+    def play_video(self):
+        play_video = prompt.confirm("Play video?")
+        if play_video:
+            os.startfile(self.episode_choice.path)
+        self.state = State.GET_AND_SET_EPISODE_METADATA
+
+    def get_and_set_episode_metadata(self):
+        self.anilist.find_and_set_data(self.episode_choice)
+        self.state = State.OPEN_REDDIT_DISCUSSION
 
     def open_reddit_discussion(self):
         self.state = State.AUTH_ANILIST
