@@ -66,7 +66,7 @@ class AniFlow:
         reload_episodes_choice = "[Reload Episodes]"
 
         choices = [reload_episodes_choice] + self.qbittorrent.get_episodes()
-        choice = prompt.list("What do you want to watch?", choices)
+        choice = prompt.list("Select an episode", choices)
         if choice is reload_episodes_choice:
             return
         else:
@@ -86,11 +86,15 @@ class AniFlow:
     def open_reddit_discussion(self):
         self.state = State.AUTH_ANILIST
 
-        reddit_url = self.reddit.get_discussion_url(self.episode_choice)
+        reddit_thread = self.reddit.get_discussion_thread(self.episode_choice)
 
         open_reddit_discussion = prompt.confirm("Open r/anime discussion thread?")
         if open_reddit_discussion:
-            webbrowser.open_new(reddit_url)
+            url = self.reddit.get_generic_search_url(self.episode_choice)
+            if reddit_thread:
+                reddit_thread.upvote()
+                url = reddit_thread.url
+            webbrowser.open_new(url)
 
     def auth_anilist(self):
         self.state = State.UPDATE_ANILIST

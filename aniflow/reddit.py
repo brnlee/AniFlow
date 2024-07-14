@@ -20,20 +20,21 @@ class Reddit:
             client_id=self.APP_CLIENT_ID,
             client_secret=self.APP_CLIENT_SECRET,
             user_agent=self.USER_AGENT,
+            username=self.USERNAME,
+            password=self.PASSWORD,
         )
         self.anime_subreddit = reddit.subreddit("anime")
 
-    def get_discussion_url(self, episode: Episode) -> str:
+    def get_discussion_thread(self, episode: Episode) -> str:
         query = self._create_reddit_search_query(episode)
         if query:
             submissions = self.anime_subreddit.search(query)
             submission = next(submissions, None)
-            # Only return a URL here if there is only a single matching submission
+            # Return here if there is only a single matching submission
             if submission and not next(submissions, None):
-                return submission.url
-        return self._get_blind_search_url(episode)
+                return submission
 
-    def _get_blind_search_url(self, episode: Episode):
+    def get_generic_search_url(self, episode: Episode):
         query = [
             "flair:episode",
             episode.anime_title,
