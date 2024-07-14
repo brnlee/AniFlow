@@ -1,4 +1,5 @@
 from datetime import datetime
+from http.client import HTTPException
 from os import getenv
 from os.path import getmtime
 from pathlib import Path
@@ -14,7 +15,9 @@ def get_last_commit_date(repo: str, path: str):
         headers={"Authorization": f"Bearer {getenv('GITHUB_TOKEN')}"},
     )
     if response.status_code != 200:
-        return
+        raise HTTPException(
+            f"Got status code {response.status_code} for GitHub request."
+        )
 
     date = nested_get(response.json()[0], ["commit", "committer", "date"])
     return datetime.strptime(date, "%Y-%m-%dT%H:%M:%SZ")
