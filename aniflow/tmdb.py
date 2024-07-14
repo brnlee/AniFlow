@@ -11,16 +11,17 @@ class TMDB:
 
     tmdb_to_anilist = defaultdict(list)
     types = {"TV", "SPECIALS"}
+    ANIME_ID_DB_FILE_NAME = "anime-list-full.json"
 
     def __init__(self) -> None:
-        self._db_path = get_root_dir() / "anime-list-full.json"
+        anime_id_db_path = get_root_dir() / self.ANIME_ID_DB_FILE_NAME
         github.update_file_if_necessary(
             repo="Fribb/anime-lists",
-            path="anime-list-full.json",
-            local_file_path=self._db_path,
+            path=self.ANIME_ID_DB_FILE_NAME,
+            local_file_path=anime_id_db_path,
         )
-        with open(self._db_path, "r") as f:
-            for entry in json.load(f):
+        with open(anime_id_db_path, "r") as anime_id_db:
+            for entry in json.load(anime_id_db):
                 anilist_id = entry.get("anilist_id")
                 tmdb_id = entry.get("themoviedb_id")
                 type = entry.get("type")
