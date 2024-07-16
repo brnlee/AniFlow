@@ -24,7 +24,7 @@ Enable the built-in web server to allow querying for torrents.
 5. Set "Username" and "Password"
 
 ### Reddit
-Create an application on [Reddit](https://reddit.com/prefs/apps/) to search for and automaticaly upvote discussion threads on [r/anime](https://reddit.com/r/anime/).
+Create an application on [Reddit](https://reddit.com/prefs/apps/) to search for and automatically upvote discussion threads on [r/anime](https://reddit.com/r/anime/).
 
 ### AniList
 Create a client on [AniList](https://anilist.co/settings/developer) for primary anime lookup based on filename.
