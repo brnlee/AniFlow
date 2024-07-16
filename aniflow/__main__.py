@@ -90,10 +90,11 @@ class AniFlow:
 
         open_reddit_discussion = prompt.confirm("Open r/anime discussion thread?")
         if open_reddit_discussion:
-            url = self.reddit.get_generic_search_url(self.episode_choice)
             if reddit_thread:
                 reddit_thread.upvote()
                 url = reddit_thread.url
+            else:
+                url = self.reddit.get_generic_search_url(self.episode_choice)
             webbrowser.open_new(url)
 
     def auth_anilist(self):
