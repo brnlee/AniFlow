@@ -9,7 +9,9 @@ from qbittorrentapi import Client
 
 class Qbittorrent:
 
+    # https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#get-torrent-contents
     PROGRESS_COMPLETE = 1
+    PRIORITY_DO_NOT_DOWNLOAD = 0
 
     def __init__(self) -> None:
         self.client = Client(
@@ -45,7 +47,10 @@ class Qbittorrent:
     def _get_episodes_per_torrent(self, torrent):
         episodes = []
         for index, file in enumerate(torrent.files):
-            if file.get("progress") == self.PROGRESS_COMPLETE and file.priority == 1:
+            if (
+                file.get("progress") == self.PROGRESS_COMPLETE
+                and file.priority != self.PRIORITY_DO_NOT_DOWNLOAD
+            ):
                 path = Path(torrent.save_path) / file.name
                 if not path.exists() or not self._is_video_file(path):
                     continue

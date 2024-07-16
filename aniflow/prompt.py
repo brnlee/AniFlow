@@ -3,12 +3,8 @@ import inquirer
 KEY = "KEY"
 
 
-def prompt(question):
-    return inquirer.prompt([question], raise_keyboard_interrupt=True).get(KEY)
-
-
 def confirm(message, default=True):
-    return prompt(
+    return _prompt(
         inquirer.Confirm(
             KEY,
             message=message,
@@ -18,8 +14,12 @@ def confirm(message, default=True):
 
 
 def list(message, choices):
-    return prompt(inquirer.List(KEY, message=message, choices=choices, carousel=True))
+    return _prompt(inquirer.List(KEY, message=message, choices=choices, carousel=True))
 
 
 def password(message):
-    return prompt(inquirer.Password(KEY, message=message, echo=""))
+    return _prompt(inquirer.Password(KEY, message=message, echo=""))
+
+
+def _prompt(question):
+    return inquirer.prompt([question], raise_keyboard_interrupt=True).get(KEY)
