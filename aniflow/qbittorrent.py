@@ -46,24 +46,31 @@ class Qbittorrent:
 
     def _get_episodes_per_torrent(self, torrent):
         episodes = []
-        for index, file in enumerate(torrent.files):
+        files = self._filter_torrent_files(torrent)
+        is_torrent_with_single_file = len(files) == 1
+        for file in files:
+            episode = Episode(
+                file.index,
+                file.name,
+                str(Path(torrent.save_path) / file.name),
+                torrent.hash,
+                can_delete_torrent=is_torrent_with_single_file,
+            )
+            episodes.append(episode)
+            self.torrents[episode] = torrent
+        return episodes
+
+    def _is_video_file(self, path):
+        return guess_type(path)[0].startswith("video")
+
+    def _filter_torrent_files(self, torrent):
+        files = []
+        for file in torrent.files:
             if (
                 file.get("progress") == self.PROGRESS_COMPLETE
                 and file.priority != self.PRIORITY_DO_NOT_DOWNLOAD
             ):
                 path = Path(torrent.save_path) / file.name
-                if not path.exists() or not self._is_video_file(path):
-                    continue
-                episode = Episode(
-                    file.index,
-                    file.name,
-                    str(path),
-                    torrent.hash,
-                    can_delete_torrent=index == len(torrent.files) - 1,
-                )
-                episodes.append(episode)
-                self.torrents[episode] = torrent
-        return episodes
-
-    def _is_video_file(self, path):
-        return guess_type(path)[0].startswith("video")
+                if path.exists() and self._is_video_file(path):
+                    files.append(file)
+        return files
