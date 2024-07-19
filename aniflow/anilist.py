@@ -79,7 +79,7 @@ class AniList:
 
         return False
 
-    def find_and_set_data(self, episode: Episode):
+    def update_episode_with_anilist_data(self, episode: Episode):
         query = """
         query ($search: String) {
             anime: Page(perPage: 2) {

@@ -1,4 +1,5 @@
 from pathlib import Path
+from threading import Thread
 
 import anitopy
 
@@ -83,6 +84,17 @@ class AniListEntry:
 
     def __repr__(self) -> str:
         return self.__str__()
+
+
+class ResultThread(Thread):
+    def run(self):
+        try:
+            if self._target is not None:
+                self.result = self._target(*self._args, **self._kwargs)
+        finally:
+            # Avoid a refcycle if the thread is running a function with
+            # an argument that has a member that points to the thread.
+            del self._target, self._args, self._kwargs
 
 
 def nested_get(dic, keys):

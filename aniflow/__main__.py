@@ -4,8 +4,9 @@ from enum import Enum, auto
 
 import prompt
 from anilist import AniList
-from common import Episode
+from common import Episode, ResultThread
 from dotenv import load_dotenv
+from praw.models import Submission
 from qbittorrent import Qbittorrent
 from reddit import Reddit
 
@@ -13,24 +14,30 @@ from reddit import Reddit
 class State(Enum):
     SELECT_EPISODE = auto()
     PLAY_VIDEO = auto()
-    GET_AND_SET_EPISODE_METADATA = auto()
+    PREFETCH_DATA = auto()
     OPEN_REDDIT_DISCUSSION = auto()
     AUTH_ANILIST = auto()
     UPDATE_ANILIST = auto()
     OPEN_ANILIST = auto()
     DELETE_EPISODE = auto()
+    CLEAN_UP = auto()
 
 
 class AniFlow:
 
+    episode_choice: Episode
+    advance_to_clean_up: bool
+    prefetch_data_thread: ResultThread
+    update_anilist_thread: ResultThread
+
     def __init__(self):
         load_dotenv()
+
         self.qbittorrent = Qbittorrent()
         self.reddit = Reddit()
         self.anilist = AniList()
 
         self.state = State.SELECT_EPISODE
-        self.episode_choice: Episode
 
     def start(self):
         try:
@@ -39,12 +46,10 @@ class AniFlow:
                     case State.SELECT_EPISODE:
                         self.reset()
                         self.state = self.select_episode()
-                    case State.PLAY_VIDEO:
-                        self.state = self.play_video()
-                    case State.GET_AND_SET_EPISODE_METADATA:
-                        self.state = self.get_and_set_episode_metadata()
                     case State.OPEN_REDDIT_DISCUSSION:
                         self.state = self.open_reddit_discussion()
+                    case State.PLAY_VIDEO:
+                        self.state = self.play_video()
                     case State.AUTH_ANILIST:
                         self.state = self.auth_anilist()
                     case State.UPDATE_ANILIST:
@@ -53,6 +58,8 @@ class AniFlow:
                         self.state = self.open_anilist()
                     case State.DELETE_EPISODE:
                         self.state = self.delete_episode()
+                    case State.CLEAN_UP:
+                        self.state = self.clean_up()
                     case _:
                         self.state = State.SELECT_EPISODE
         except KeyboardInterrupt:
@@ -60,6 +67,9 @@ class AniFlow:
 
     def reset(self):
         self.episode_choice = None
+        self.advance_to_clean_up = False
+        self.prefetch_data_thread = None
+        self.update_anilist_thread = None
         os.system("cls")
 
     def select_episode(self):
@@ -70,25 +80,24 @@ class AniFlow:
             return State.SELECT_EPISODE
         else:
             self.episode_choice = choice
+            self.prefetch_data_thread = ResultThread(target=self.prefetch_data)
+            self.prefetch_data_thread.start()
             return State.PLAY_VIDEO
 
     def play_video(self):
         play_video = prompt.confirm("Play video?")
         if play_video:
             os.startfile(self.episode_choice.path)
-        return State.GET_AND_SET_EPISODE_METADATA
-
-    def get_and_set_episode_metadata(self):
-        self.anilist.find_and_set_data(self.episode_choice)
         return State.OPEN_REDDIT_DISCUSSION
 
     def open_reddit_discussion(self):
-        reddit_thread = self.reddit.get_discussion_thread(self.episode_choice)
         open_reddit_discussion = prompt.confirm("Open r/anime discussion thread?")
+        self.prefetch_data_thread.join()
         if open_reddit_discussion:
-            if reddit_thread:
-                reddit_thread.upvote()
-                url = reddit_thread.url
+            reddit_discussion = self.prefetch_data_thread.result
+            if reddit_discussion:
+                reddit_discussion.upvote()
+                url = reddit_discussion.url
             else:
                 url = self.reddit.get_generic_search_url(self.episode_choice)
             webbrowser.open_new(url)
@@ -108,6 +117,7 @@ class AniFlow:
         return State.UPDATE_ANILIST
 
     def update_anilist(self):
+        self.prefetch_data_thread.join()
         if not self.episode_choice.anilist_entry:
             return State.DELETE_EPISODE
 
@@ -115,10 +125,12 @@ class AniFlow:
             f'Update progress on AniList for "{self.episode_choice.anilist_entry.titles[0]}"?'
         )
         if update_anilist:
-            encountered_auth_error = self.anilist.update_entry(self.episode_choice)
-            if encountered_auth_error:
-                return State.AUTH_ANILIST
-        return State.OPEN_ANILIST
+            self.update_anilist_thread = ResultThread(
+                target=self.anilist.update_entry, args=[self.episode_choice]
+            )
+            self.update_anilist_thread.start()
+
+        return State.CLEAN_UP if self.advance_to_clean_up else State.OPEN_ANILIST
 
     def open_anilist(self):
         if self.episode_choice.is_last_episode():
@@ -131,7 +143,22 @@ class AniFlow:
         delete_episode = prompt.confirm("Delete episode?", default=False)
         if delete_episode:
             self.qbittorrent.delete(self.episode_choice)
+        return State.CLEAN_UP
+
+    def clean_up(self):
+        if self.update_anilist_thread:
+            self.update_anilist_thread.join()
+            encountered_auth_error = self.update_anilist_thread.result
+            self.update_anilist_thread = None
+            if encountered_auth_error:
+                self.advance_to_clean_up = True
+                return State.AUTH_ANILIST
+
         return State.SELECT_EPISODE
+
+    def prefetch_data(self):
+        self.anilist.update_episode_with_anilist_data(self.episode_choice)
+        return self.reddit.find_discussion(self.episode_choice)
 
 
 if __name__ == "__main__":

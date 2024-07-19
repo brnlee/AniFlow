@@ -4,6 +4,7 @@ from os import getenv
 import praw
 import requests
 from common import Episode
+from praw.models import Submission
 
 
 class Reddit:
@@ -25,7 +26,7 @@ class Reddit:
         )
         self.anime_subreddit = reddit.subreddit("anime")
 
-    def get_discussion_thread(self, episode: Episode) -> str:
+    def find_discussion(self, episode: Episode) -> Submission:
         query = self._create_reddit_search_query(episode)
         if query:
             submissions = self.anime_subreddit.search(query)
@@ -34,7 +35,7 @@ class Reddit:
             if submission and not next(submissions, None):
                 return submission
 
-    def get_generic_search_url(self, episode: Episode):
+    def get_generic_search_url(self, episode: Episode) -> str:
         query = [
             "flair:episode",
             episode.anime_title,
