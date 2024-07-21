@@ -97,7 +97,7 @@ class AniFlow:
         if open_reddit_discussion:
             reddit_discussion = self.prefetch_data_thread.result
             if reddit_discussion:
-                Thread(target=lambda: reddit_discussion.upvote()).start()
+                Thread(target=reddit_discussion.upvote).start()
                 url = reddit_discussion.url
             else:
                 url = self.reddit.get_generic_search_url(self.episode_choice)
