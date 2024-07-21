@@ -1,6 +1,7 @@
 import os
 import webbrowser
 from enum import Enum, auto
+from threading import Thread
 
 import prompt
 from anilist import AniList
@@ -96,7 +97,7 @@ class AniFlow:
         if open_reddit_discussion:
             reddit_discussion = self.prefetch_data_thread.result
             if reddit_discussion:
-                reddit_discussion.upvote()
+                Thread(target=lambda: reddit_discussion.upvote()).start()
                 url = reddit_discussion.url
             else:
                 url = self.reddit.get_generic_search_url(self.episode_choice)
