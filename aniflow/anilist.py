@@ -1,3 +1,4 @@
+import logging
 import string
 import webbrowser
 from difflib import SequenceMatcher
@@ -49,10 +50,11 @@ class AniList:
         }
         """
         status = "COMPLETED" if episode.is_last_episode() else "CURRENT"
+        progress = int(episode.episode_number) if episode.episode_number else 1
         variables = {
             "mediaId": episode.anilist_entry.id,
             "status": status,
-            "progress": int(episode.episode_number),
+            "progress": progress,
         }
         headers = {
             "Authorization": f"Bearer {self._token}",
@@ -111,16 +113,17 @@ class AniList:
             self.GRAPHQL_URL, json={"query": query, "variables": variables}
         )
         if response.status_code != 200:
+            print(f"Bad status code: {response.status_code}")
             return
 
         results = nested_get(response.json(), ["data", "anime", "results"])
 
         anime = self._match_anime(episode, results)
         if not anime:
-            print("Failed to confidently find anime on AniList")
+            logging.debug("Failed to confidently find anime on AniList")
             entry_ids, absolute_episode_number = self.tmdb.search(episode)
             if not entry_ids:
-                print("Could not find anime on TMDB")
+                logging.debug("Could not find anime on TMDB")
                 return
             graph = {}
             head_node_id = self._build_graph(entry_ids, graph)
@@ -132,9 +135,9 @@ class AniList:
                 episode.episode_number = str(relative_episode_number)
             episode.anilist_entry = graph.get(entry_id)
             if episode.anilist_entry:
-                print("Found AniList entry after falling back to TMDB")
+                logging.debug("Found AniList entry after falling back to TMDB")
             else:
-                print("Could not find any AniList entry falling back to TMDB")
+                logging.debug("Could not find any AniList entry falling back to TMDB")
             return
 
         episode.anilist_entry = AniListEntry(anime)
@@ -210,7 +213,7 @@ class AniList:
                 self.GRAPHQL_URL, json={"query": query, "variables": variables}
             )
             if response.status_code != 200:
-                print("ERROR")
+                print("ERROR", response.status_code)
                 continue
 
             anime = nested_get(response.json(), ["data", "Media"])
