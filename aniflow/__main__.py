@@ -7,7 +7,6 @@ import prompt
 from anilist import AniList
 from common import Episode, ResultThread
 from dotenv import load_dotenv
-from praw.models import Submission
 from qbittorrent import Qbittorrent
 from reddit import Reddit
 
@@ -16,9 +15,9 @@ class State(Enum):
     SELECT_EPISODE = auto()
     PLAY_VIDEO = auto()
     PREFETCH_DATA = auto()
-    OPEN_REDDIT_DISCUSSION = auto()
     AUTH_ANILIST = auto()
     UPDATE_ANILIST = auto()
+    OPEN_REDDIT_DISCUSSION = auto()
     OPEN_ANILIST = auto()
     DELETE_EPISODE = auto()
     CLEAN_UP = auto()
@@ -47,14 +46,14 @@ class AniFlow:
                     case State.SELECT_EPISODE:
                         self.reset()
                         self.state = self.select_episode()
-                    case State.OPEN_REDDIT_DISCUSSION:
-                        self.state = self.open_reddit_discussion()
                     case State.PLAY_VIDEO:
                         self.state = self.play_video()
                     case State.AUTH_ANILIST:
                         self.state = self.auth_anilist()
                     case State.UPDATE_ANILIST:
                         self.state = self.update_anilist()
+                    case State.OPEN_REDDIT_DISCUSSION:
+                        self.state = self.open_reddit_discussion()
                     case State.OPEN_ANILIST:
                         self.state = self.open_anilist()
                     case State.DELETE_EPISODE:
@@ -89,19 +88,6 @@ class AniFlow:
         play_video = prompt.confirm("Play video?")
         if play_video:
             os.startfile(self.episode_choice.path)
-        return State.OPEN_REDDIT_DISCUSSION
-
-    def open_reddit_discussion(self):
-        open_reddit_discussion = prompt.confirm("Open r/anime discussion thread?")
-        self.prefetch_data_thread.join()
-        if open_reddit_discussion:
-            reddit_discussion = self.prefetch_data_thread.result
-            if reddit_discussion:
-                Thread(target=reddit_discussion.upvote).start()
-                url = reddit_discussion.url
-            else:
-                url = self.reddit.get_generic_search_url(self.episode_choice)
-            webbrowser.open_new(url)
         return State.AUTH_ANILIST
 
     def auth_anilist(self):
@@ -110,7 +96,7 @@ class AniFlow:
                 "AniList requires your authorization in order to update your anime list. Proceed?"
             )
             if not proceed:
-                return State.OPEN_ANILIST
+                return State.OPEN_REDDIT_DISCUSSION
 
             self.anilist.open_authorization_page()
             access_token = prompt.password("Paste the token provided by AniList")
@@ -120,7 +106,7 @@ class AniFlow:
     def update_anilist(self):
         self.prefetch_data_thread.join()
         if not self.episode_choice.anilist_entry:
-            return State.DELETE_EPISODE
+            return State.OPEN_REDDIT_DISCUSSION
 
         update_anilist = prompt.confirm(
             f'Update progress on AniList for "{self.episode_choice.anilist_entry.titles[0]}"?'
@@ -131,10 +117,25 @@ class AniFlow:
             )
             self.update_anilist_thread.start()
 
-        return State.CLEAN_UP if self.advance_to_clean_up else State.OPEN_ANILIST
+        return (
+            State.CLEAN_UP if self.advance_to_clean_up else State.OPEN_REDDIT_DISCUSSION
+        )
+
+    def open_reddit_discussion(self):
+        open_reddit_discussion = prompt.confirm("Open r/anime discussion thread?")
+        if open_reddit_discussion:
+            self.prefetch_data_thread.join()
+            reddit_discussion = self.prefetch_data_thread.result
+            if reddit_discussion:
+                Thread(target=reddit_discussion.upvote).start()
+                url = reddit_discussion.url
+            else:
+                url = self.reddit.get_generic_search_url(self.episode_choice)
+            webbrowser.open_new(url)
+        return State.OPEN_ANILIST
 
     def open_anilist(self):
-        if self.episode_choice.is_last_episode():
+        if self.episode_choice.anilist_entry and self.episode_choice.is_last_episode():
             open_anilist = prompt.confirm("Open AniList page for the anime?")
             if open_anilist:
                 webbrowser.open_new(self.episode_choice.anilist_entry.url)
