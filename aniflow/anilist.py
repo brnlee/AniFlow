@@ -174,7 +174,7 @@ class AniList:
                 if (
                     episode.episode_number
                     and episode_count
-                    and int(episode.episode_number) > episode_count
+                    and float(episode.episode_number) > episode_count
                 ):
                     continue
                 anime["titles"] = titles
