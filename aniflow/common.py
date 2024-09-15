@@ -36,7 +36,7 @@ class Episode:
         elif not self.episode_number:
             return True
 
-        return float(self.episode_number) is float(self.anilist_entry.episode_count)
+        return float(self.episode_number) == float(self.anilist_entry.episode_count)
 
     def _get_file_name(self):
         """Returns the file name after removing any directory paths"""
