@@ -113,7 +113,7 @@ class AniList:
             self.GRAPHQL_URL, json={"query": query, "variables": variables}
         )
         if response.status_code != 200:
-            print(f"Bad status code: {response.status_code}")
+            print(f"Bad status code: {response.status_code} {response.reason}")
             return
 
         results = nested_get(response.json(), ["data", "anime", "results"])
