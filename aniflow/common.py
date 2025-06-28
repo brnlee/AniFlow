@@ -40,7 +40,7 @@ class Episode:
 
     def _get_file_name(self):
         """Returns the file name after removing any directory paths"""
-        return self.file_name.split("/")[-1]
+        return self.file_name.split("/")[-1].replace(".", " ")
 
     def __str__(self):
         return self.fmt_str()

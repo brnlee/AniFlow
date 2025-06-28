@@ -1,4 +1,5 @@
 import logging
+import math
 import string
 import webbrowser
 from difflib import SequenceMatcher
@@ -172,9 +173,9 @@ class AniList:
             if self._titles_match(sequence_matcher, titles):
                 episode_count = anime.get("episodes")
                 if (
-                    episode.episode_number
-                    and episode_count
-                    and float(episode.episode_number) > episode_count
+                    not episode.episode_number
+                    or not episode_count
+                    or float(episode.episode_number) > episode_count
                 ):
                     continue
                 anime["titles"] = titles
@@ -257,7 +258,7 @@ class AniList:
         while id:
             node = graph[id]
             start = cumulative_episode_count + 1
-            end = start + node.episode_count - 1
+            end = start + node.episode_count - 1 if node.episode_count else math.inf
             if start <= absolute_episode_number <= end:
                 relative_episode_number = (
                     absolute_episode_number - cumulative_episode_count

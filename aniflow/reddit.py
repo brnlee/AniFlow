@@ -5,6 +5,7 @@ import praw
 import requests
 from common import Episode
 from praw.models import Submission
+import logging
 
 
 class Reddit:
@@ -34,6 +35,8 @@ class Reddit:
             # Return here if there is only a single matching submission
             if submission and not next(submissions, None):
                 return submission
+            else:
+                logging.info("Could not find exact Reddit thread")
 
     def get_generic_search_url(self, episode: Episode) -> str:
         query = [
@@ -72,9 +75,9 @@ class Reddit:
         if not episode.anilist_entry:
             return None
         title_terms = " OR ".join(
-            [f'"{title}"' for title in episode.anilist_entry.titles]
+            {f'"{title}"' for title in episode.anilist_entry.titles}
         )
-        query = f"flair:episode ({title_terms})"
+        query = f"flair:episode title:({title_terms})"
 
         episode_numbers = filter(
             None, [episode.episode_number, episode.absolute_episode_number]
