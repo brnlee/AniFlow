@@ -27,8 +27,10 @@ class Reddit:
         )
         self.anime_subreddit = reddit.subreddit("anime")
 
-    def find_discussion(self, episode: Episode) -> Submission:
-        query = self._create_reddit_search_query(episode)
+    def find_discussion(
+        self, episode: Episode, use_synonyms: bool = False
+    ) -> Submission:
+        query = self._create_reddit_search_query(episode, use_synonyms)
         if query:
             submissions = self.anime_subreddit.search(query)
             submission = next(submissions, None)
@@ -37,6 +39,7 @@ class Reddit:
                 return submission
             else:
                 logging.info("Could not find exact Reddit thread")
+                return self.find_discussion(episode, use_synonyms=True)
 
     def get_generic_search_url(self, episode: Episode) -> str:
         query = [
@@ -71,19 +74,23 @@ class Reddit:
         )
         return response.json().get("access_token")
 
-    def _create_reddit_search_query(self, episode: Episode):
+    def _create_reddit_search_query(
+        self, episode: Episode, use_synonyms=False
+    ) -> str | None:
         if not episode.anilist_entry:
             return None
-        title_terms = " OR ".join(
-            {f'"{title}"' for title in episode.anilist_entry.titles}
-        )
-        query = f"flair:episode title:({title_terms})"
+
+        titles = episode.anilist_entry.titles
+        if use_synonyms and episode.anilist_entry.synonyms:
+            titles.extend(episode.anilist_entry.synonyms)
+        title_terms = " OR ".join({f'"{title}"' for title in titles})
+        query = f"flair:episode (selftext:({title_terms}) OR title:({title_terms}))"
 
         episode_numbers = filter(
             None, [episode.episode_number, episode.absolute_episode_number]
         )
         episode_terms = " OR ".join([f'"Episode {n}"' for n in episode_numbers])
         if episode_terms:
-            query += f" AND ({episode_terms})"
+            query += f" title:({episode_terms})"
 
         return query

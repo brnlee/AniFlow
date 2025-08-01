@@ -31,6 +31,7 @@ class Qbittorrent:
                 ep.anime_title,
                 ep.season,
                 float(ep.episode_number) if ep.episode_number else None,
+                float(ep.release_version) if ep.release_version else None,
             ),
         )
 

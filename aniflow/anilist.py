@@ -148,8 +148,9 @@ class AniList:
         return title and all((c in self.ACCEPTABLE_CHARS for c in title))
 
     def _get_titles(self, anime) -> List[str]:
-        titles = list(anime.get("title").values()) + anime.get("synonyms", [])
-        return list(filter(self._is_valid_title, titles))
+        titles = list(filter(self._is_valid_title, list(anime.get("title").values())))
+        synonyms = list(filter(self._is_valid_title, anime.get("synonyms", [])))
+        return titles, synonyms
 
     def _titles_match(self, sequence_matcher, titles) -> bool:
         for title in titles:
@@ -169,8 +170,8 @@ class AniList:
             b=self._prepare_string_for_comparison(title),
         )
         for anime in results:
-            titles = self._get_titles(anime)
-            if self._titles_match(sequence_matcher, titles):
+            titles, synonyms = self._get_titles(anime)
+            if self._titles_match(sequence_matcher, titles + synonyms):
                 episode_count = anime.get("episodes")
                 if (
                     not episode.episode_number
@@ -179,6 +180,7 @@ class AniList:
                 ):
                     continue
                 anime["titles"] = titles
+                anime["synonyms"] = synonyms
                 return anime
 
     def _build_graph(self, ids: List[int], graph):
@@ -218,7 +220,7 @@ class AniList:
                 continue
 
             anime = nested_get(response.json(), ["data", "Media"])
-            anime["titles"] = self._get_titles(anime)
+            anime["titles"], anime["synonyms"] = self._get_titles(anime)
             edges = nested_get(anime, ["relations", "edges"])
             nodes = nested_get(anime, ["relations", "nodes"])
             if not edges and not nodes:

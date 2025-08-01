@@ -1,7 +1,10 @@
+from math import e
 from pathlib import Path
 from threading import Thread
 
 import anitopy
+from anitopy.element import ElementCategory
+from annotated_types import T
 
 
 class Episode:
@@ -18,16 +21,25 @@ class Episode:
             "allowed_delimiters": " _&+,|",
         }
         details = anitopy.parse(self._get_file_name(), options=anitopy_options)
-        self.anime_title = details.get("anime_title")
+        self.anime_title = details.get(ElementCategory.ANIME_TITLE.value)
 
-        episode_number = details.get("episode_number")
+        episode_number = details.get(ElementCategory.EPISODE_NUMBER.value)
         self.episode_number = (
             float(episode_number.lstrip("0")) if episode_number else None
         )
         if self.episode_number:
             self.episode_number = f"{self.episode_number:g}"
         self.absolute_episode_number = None
-        self.season = int(details.get("anime_season", 0))
+
+        self.season = int(details.get(ElementCategory.ANIME_SEASON.value, 0))
+        # Season 1 may be equivalent to season 0
+        if self.season == 1:
+            self.season = 0
+
+        self.release_version = int(
+            details.get(ElementCategory.RELEASE_VERSION.value, 1)
+        )
+
         self.anilist_entry: AniListEntry = None
 
     def is_last_episode(self):
@@ -50,6 +62,7 @@ class Episode:
         include_title=True,
         include_season=True,
         include_episode_number=True,
+        include_release_version=True,
     ):
         tokens = []
 
@@ -61,6 +74,8 @@ class Episode:
 
         if include_episode_number and self.episode_number:
             tokens.append(f"Episode {self.episode_number}")
+            if include_release_version and self.release_version > 1:
+                tokens.append(f"v{self.release_version}")
 
         return tokens
 
@@ -76,11 +91,12 @@ class AniListEntry:
     def __init__(self, anime: dict) -> None:
         self.id = anime.get("id")
         self.titles = anime.get("titles")
+        self.synonyms = anime.get("synonyms", [])
         self.url = anime.get("siteUrl")
         self.episode_count = anime.get("episodes")
 
     def __str__(self) -> str:
-        return f"{self.id} {self.titles} {self.url} prequel={self.prequel} sequel={self.sequel}"
+        return f"{self.id} {self.titles} {self.url} prequel={self.prequel} sequel={self.sequel} url={self.url}"
 
     def __repr__(self) -> str:
         return self.__str__()
