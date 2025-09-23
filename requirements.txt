@@ -1,4 +1,5 @@
 anitopy
+annotated-types
 inquirer
 praw
 python-dotenv

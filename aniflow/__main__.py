@@ -1,4 +1,5 @@
 import os
+import subprocess
 import webbrowser
 from enum import Enum, auto
 from threading import Thread
@@ -70,7 +71,10 @@ class AniFlow:
         self.advance_to_clean_up = False
         self.prefetch_data_thread = None
         self.update_anilist_thread = None
-        os.system("cls")
+        if os.name == 'nt':
+            os.system("cls")
+        else:
+            os.system('clear')
 
     def select_episode(self):
         reload_episodes_choice = "[Reload Episodes]"
@@ -87,7 +91,10 @@ class AniFlow:
     def play_video(self):
         play_video = prompt.confirm("Play video?")
         if play_video:
-            os.startfile(self.episode_choice.path)
+            if os.name  == 'nt':
+                os.startfile(self.episode_choice.path)
+            else:
+                subprocess.call(['xdg-open', self.episode_choice.path])
         return State.AUTH_ANILIST
 
     def auth_anilist(self):
