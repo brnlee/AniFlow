@@ -25,7 +25,7 @@ class Episode:
 
         episode_number = details.get(ElementCategory.EPISODE_NUMBER.value)
         self.episode_number = (
-            float(episode_number.lstrip("0")) if episode_number else None
+            float(episode_number) if episode_number else None
         )
         if self.episode_number:
             self.episode_number = f"{self.episode_number:g}"
