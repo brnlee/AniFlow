@@ -94,7 +94,7 @@ class AniFlow:
             if os.name  == 'nt':
                 os.startfile(self.episode_choice.path)
             else:
-                subprocess.call(['xdg-open', self.episode_choice.path])
+                subprocess.Popen(['xdg-open', self.episode_choice.path])
         return State.AUTH_ANILIST
 
     def auth_anilist(self):
