@@ -174,9 +174,9 @@ class AniList:
             if self._titles_match(sequence_matcher, titles + synonyms):
                 episode_count = anime.get("episodes")
                 if (
-                    not episode.episode_number
-                    or not episode_count
-                    or float(episode.episode_number) > episode_count
+                    episode.episode_number
+                    and episode_count
+                    and float(episode.episode_number) > episode_count
                 ):
                     continue
                 anime["titles"] = titles
