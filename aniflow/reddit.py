@@ -37,9 +37,11 @@ class Reddit:
             # Return here if there is only a single matching submission
             if submission and not next(submissions, None):
                 return submission
-            else:
+            elif not use_synonyms:
                 logging.info("Could not find exact Reddit thread")
                 return self.find_discussion(episode, use_synonyms=True)
+            else:
+                return None
 
     def get_generic_search_url(self, episode: Episode) -> str:
         query = [
