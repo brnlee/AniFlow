@@ -18,7 +18,6 @@ class AniList:
     KEY_ANILIST_CLIENT_ID = "ANILIST_CLIENT_ID"
     KEY_ANILIST_TOKEN = "ANILIST_TOKEN"
     MIN_TITLE_SIMILARITY_RATIO = 0.9
-    ACCEPTABLE_CHARS = set(string.printable)
 
     def __init__(self) -> None:
         self._token = getenv("ANILIST_TOKEN")
@@ -145,7 +144,7 @@ class AniList:
 
     def _is_valid_title(self, title) -> bool:
         """Returns True if all characters in the title argument are acceptable"""
-        return title and all((c in self.ACCEPTABLE_CHARS for c in title))
+        return title and title.isprintable()
 
     def _get_titles(self, anime) -> List[str]:
         titles = list(filter(self._is_valid_title, list(anime.get("title").values())))

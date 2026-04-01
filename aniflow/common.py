@@ -24,11 +24,10 @@ class Episode:
         self.anime_title = details.get(ElementCategory.ANIME_TITLE.value)
 
         episode_number = details.get(ElementCategory.EPISODE_NUMBER.value)
-        self.episode_number = (
-            float(episode_number) if episode_number else None
-        )
-        if self.episode_number:
-            self.episode_number = f"{self.episode_number:g}"
+        try:
+            self.episode_number = f"{float(episode_number):g}"
+        except (TypeError, ValueError):
+            self.episode_number = episode_number
         self.absolute_episode_number = None
 
         self.season = int(details.get(ElementCategory.ANIME_SEASON.value, 0))
@@ -103,6 +102,8 @@ class AniListEntry:
 
 
 class ResultThread(Thread):
+    result = None
+
     def run(self):
         try:
             if self._target is not None:

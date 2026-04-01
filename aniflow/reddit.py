@@ -85,6 +85,7 @@ class Reddit:
         titles = episode.anilist_entry.titles
         if use_synonyms and episode.anilist_entry.synonyms:
             titles.extend(episode.anilist_entry.synonyms)
+        titles = self._normalize_titles(titles)
         title_terms = " OR ".join({f'"{title}"' for title in titles})
         query = f"flair:episode (selftext:({title_terms}) OR title:({title_terms}))"
 
@@ -96,3 +97,6 @@ class Reddit:
             query += f" title:({episode_terms})"
 
         return query
+
+    def _normalize_titles(self, titles) -> list[str]:
+        return [title.replace("’", "'") for title in titles]
